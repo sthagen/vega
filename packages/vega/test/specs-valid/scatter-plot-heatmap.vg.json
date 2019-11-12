@@ -13,6 +13,14 @@
     {
       "name": "bandwidthY", "value": -1,
       "bind": {"input": "range", "min": -1, "max": 100, "step": 1}
+    },
+    {
+      "name": "cellSize", "value": 4,
+      "bind": {"input": "select", "options": [1, 2, 4, 8, 16]}
+    },
+    {
+      "name": "smooth", "value": true,
+      "bind": {"input": "checkbox"}
     }
   ],
 
@@ -23,7 +31,7 @@
       "transform": [
         {
           "type": "filter",
-          "expr": "datum.Horsepower != null && datum.Miles_per_Gallon != null && datum.Acceleration != null"
+          "expr": "datum.Horsepower != null && datum.Miles_per_Gallon != null"
         }
       ]
     },
@@ -36,11 +44,8 @@
           "size": [{"signal": "width"}, {"signal": "height"}],
           "x": {"expr": "scale('x', datum.Horsepower)"},
           "y": {"expr": "scale('y', datum.Miles_per_Gallon)"},
-          "bandwidth": {"signal": "[bandwidthX, bandwidthY]"}
-        },
-        {
-          "type": "formula", "as": "extent",
-          "expr": "extent(datum.grid.values)"
+          "bandwidth": {"signal": "[bandwidthX, bandwidthY]"},
+          "cellSize": {"signal": "cellSize"}
         }
       ]
     }
@@ -105,7 +110,8 @@
           "y": {"value": 0},
           "width": {"signal": "width"},
           "height": {"signal": "height"},
-          "aspect": {"value": false}
+          "aspect": {"value": false},
+          "smooth": {"signal": "smooth"}
         }
       },
       "transform": [

@@ -1,6 +1,6 @@
 # vega-time
 
-JavaScript date/time utilities for Vega. Provides a set of helper methods for working with date objects (or, equivalently, with [UNIX timestamps](https://en.wikipedia.org/wiki/Unix_time)).
+JavaScript date-time utilities for Vega. Provides a set of helper methods for working with date objects (or, equivalently, with [UNIX timestamps](https://en.wikipedia.org/wiki/Unix_time)).
 
 ## API Reference
 
@@ -10,7 +10,7 @@ JavaScript date/time utilities for Vega. Provides a set of helper methods for wo
 
 ### Time Units
 
-The date/time utilities support a set of pre-defined time units. A single _unit_ value is one of the following strings:
+The date-time utilities support a set of pre-defined time units. A single _unit_ value is one of the following strings:
 
 - `'year'` - [Gregorian calendar](https://en.wikipedia.org/wiki/Gregorian_calendar) years.
 - `'quarter'` - Three-month intervals, starting in one of January, April, July, and October.
@@ -35,7 +35,7 @@ Returns a standardized and sorted specifier for the given _units_, which must be
 vega.<b>timeUnitSpecifier</b>(<i>units</i>[, <i>specifiers</i>])
 [<>](https://github.com/vega/vega/blob/master/packages/vega-time/src/format.js "Source")
 
-Returns a time format specifier string for the given time _units_. The optional _specifiers_ object provides a set of desired specifier sub-strings for customizing the resulting time formats. The _specifiers_ object may contain keys for both single time units (`"year"`) and time unit sequences (`"year-month-date"`). This method will first standardize the input time units using the [timeUnits](#timeUnits) method. It will then search, starting from the beginning of the units array, for the largest matching sequence defined in the specifiers object. Matching entries are then concatenated together, and the resulting string is whitespaced-trimmed and returned.
+Returns a time format specifier string for the given time _units_. The optional _specifiers_ object provides a set of desired specifier sub-strings for customizing the resulting time formats. The _specifiers_ object may contain keys for both single time units (`"year"`) and time unit sequences (`"year-month-date"`). This method will first standardize the input time units using the [timeUnits](#timeUnits) method. It will then search, starting from the beginning of the units array, for the largest matching sequence defined in the specifiers object. Matching entries are then concatenated together, and the resulting string is whitespace-trimmed and returned.
 
 If no _specifiers_ object is provided, the following defaults are used:
 
@@ -116,7 +116,7 @@ vega.<b>timeOffset</b>(<i>unit</i>, <i>date</i>[, <i>step</i>])
 Returns a new Date instance that offsets the given _date_ by the specified time _unit_ in the local timezone. The optional _step_ argument indicates the number of time unit steps to offset by (default 1).
 
 <a name="timeSequence" href="#timeSequence">#</a>
-vega.<b>timeSequence</b>(<i>unit</i>, <i>start</i>, <i>stop</i>, <i>step</i>)
+vega.<b>timeSequence</b>(<i>unit</i>, <i>start</i>, <i>stop</i>[, <i>step</i>])
 [<>](https://github.com/vega/vega/blob/master/packages/vega-time/src/interval.js "Source")
 
 Returns an array of Date instances from _start_ (inclusive) to _stop_ (exclusive), with each entry separated by the given time _unit_ in the local timezone. The optional _step_ argument indicates the number of time unit steps to take between each sequence entry (default 1).
@@ -150,7 +150,7 @@ vega.<b>utcOffset</b>(<i>unit</i>, <i>date</i>[, <i>step</i>])
 Returns a new Date instance that offsets the given _date_ by the specified time _unit_ in [Coordinated Universal Time](https://en.wikipedia.org/wiki/Coordinated_Universal_Time) (UTC). The optional _step_ argument indicates the number of time unit steps to offset by (default 1).
 
 <a name="utcSequence" href="#utcSequence">#</a>
-vega.<b>utcSequence</b>(<i>unit</i>, <i>start</i>, <i>stop</i>, <i>step</i>)
+vega.<b>utcSequence</b>(<i>unit</i>, <i>start</i>, <i>stop</i>[, <i>step</i>])
 [<>](https://github.com/vega/vega/blob/master/packages/vega-time/src/interval.js "Source")
 
 Returns an array of Date instances from _start_ (inclusive) to _stop_ (exclusive), with each entry separated by the given time _unit_ in [Coordinated Universal Time](https://en.wikipedia.org/wiki/Coordinated_Universal_Time) (UTC). The optional _step_ argument indicates the number of time unit steps to take between each sequence entry (default 1).

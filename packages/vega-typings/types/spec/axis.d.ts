@@ -40,19 +40,6 @@ export interface TimeFormatSpecifier {
   minutes?: string;
   seconds?: string;
   milliseconds?: string;
-  'year-quarter'?: string;
-  'year-month'?: string;
-  'year-month-date'?: string;
-  'month-date'?: string;
-  'year-week'?: string;
-  'year-week-day'?: string;
-  'week-day'?: string;
-  'hours-minutes'?: string;
-  'hours-minutes-seconds'?: string;
-  'hours-minutes-seconds-milliseconds'?: string;
-  'minutes-seconds'?: string;
-  'minutes-seconds-milliseconds'?: string;
-  'seconds-milliseconds'?: string;
 }
 
 export interface Axis extends BaseAxis {
@@ -161,6 +148,11 @@ export interface AxisEncode {
 }
 
 export interface BaseAxis {
+  /**
+   * Translation offset in pixels applied to the axis group mark x and y. If specified, overrides the default behavior of a 0.5 offset to pixel-align stroked lines.
+   */
+  translate?: number;
+
   /**
    * The minimum extent in pixels that axis ticks and labels should use. This determines a minimum offset value for axis titles.
    *
@@ -307,6 +299,11 @@ export interface BaseAxis {
    * __Default value:__ `true`
    */
   ticks?: BooleanValue;
+
+  /**
+   * For band scales, indicates if ticks and grid lines should be placed at the center of a band (default) or at the band extents to indicate intervals.
+   */
+  tickBand?: 'center' | 'extent' | SignalRef;
 
   /**
    * The color of the axis's tick.
