@@ -11,25 +11,13 @@ import {
   SymbolShape,
   TextBaseline,
 } from '.';
-import { BaseAxis, LabelOverlap } from './axis';
-import { LayoutAlign, LayoutBounds } from './layout';
-import { BaseLegend, LegendOrient } from './legend';
+import { BaseAxis } from './axis';
+import { Color } from './color';
+import { LayoutBounds } from './layout';
+import { BaseLegend } from './legend';
 import { BaseProjection } from './projection';
 import { InitSignal, NewSignal, SignalRef } from './signal';
 import { BaseTitle, TitleAnchor } from './title';
-import {
-  AlignValue,
-  AnchorValue,
-  ColorValue,
-  DashArrayValue,
-  FontStyleValue,
-  FontWeightValue,
-  NumberValue,
-  OrientValue,
-  StringValue,
-  SymbolShapeValue,
-  TextBaselineValue,
-} from './values';
 
 export interface Config
   extends Partial<Record<MarkConfigKeys, MarkConfig>>,
@@ -71,7 +59,7 @@ export interface MarkConfig {
    * __Default value:__ (None)
    *
    */
-  fill?: string;
+  fill?: string | SignalRef;
 
   /**
    * Default Stroke Color.  This has higher precedence than config.color
@@ -79,7 +67,7 @@ export interface MarkConfig {
    * __Default value:__ (None)
    *
    */
-  stroke?: string;
+  stroke?: string | SignalRef;
 
   // ---------- Opacity ----------
   /**
@@ -90,7 +78,7 @@ export interface MarkConfig {
    * @minimum 0
    * @maximum 1
    */
-  opacity?: number;
+  opacity?: number | SignalRef;
 
   /**
    * The fill opacity (value between [0,1]).
@@ -100,7 +88,7 @@ export interface MarkConfig {
    * @minimum 0
    * @maximum 1
    */
-  fillOpacity?: number;
+  fillOpacity?: number | SignalRef;
 
   /**
    * The stroke opacity (value between [0,1]).
@@ -110,7 +98,7 @@ export interface MarkConfig {
    * @minimum 0
    * @maximum 1
    */
-  strokeOpacity?: number;
+  strokeOpacity?: number | SignalRef;
 
   // ---------- Stroke Style ----------
   /**
@@ -118,17 +106,22 @@ export interface MarkConfig {
    *
    * @minimum 0
    */
-  strokeWidth?: number;
+  strokeWidth?: number | SignalRef;
 
   /**
    * An array of alternating stroke, space lengths for creating dashed or dotted lines.
    */
-  strokeDash?: number[];
+  strokeDash?: number[] | SignalRef;
 
   /**
    * The offset (in pixels) into which to begin drawing with the stroke dash array.
    */
-  strokeDashOffset?: number;
+  strokeDashOffset?: number | SignalRef;
+
+  /**
+   * The amount to offset background rendering for stroked group marks.
+   */
+  strokeOffset?: number;
 
   /**
    * The stroke cap for line ending style.
@@ -136,7 +129,7 @@ export interface MarkConfig {
    * __Default value:__ `butt`
    *
    */
-  strokeCap?: string;
+  strokeCap?: string | SignalRef;
 
   /**
    * The stroke line join method.
@@ -144,12 +137,12 @@ export interface MarkConfig {
    * __Default value:__ `miter`
    *
    */
-  strokeJoin?: string;
+  strokeJoin?: string | SignalRef;
 
   /**
    * The miter limit at which to bevel a line join.
    */
-  strokeMiterLimit?: number;
+  strokeMiterLimit?: number | SignalRef;
 
   // ---------- Orientation: Bar, Tick, Line, Area ----------
   /**
@@ -163,7 +156,7 @@ export interface MarkConfig {
    * For stacked charts, this is always determined by the orientation of the stack;
    * therefore explicitly specified value will be ignored.
    */
-  orient?: Orientation;
+  orient?: Orientation | SignalRef;
 
   // ---------- Interpolation: Line / area ----------
   /**
@@ -182,13 +175,13 @@ export interface MarkConfig {
    * - `"bundle"`: equivalent to basis, except the tension parameter is used to straighten the spline.
    * - `"monotone"`: cubic interpolation that preserves monotonicity in y.
    */
-  interpolate?: Interpolate;
+  interpolate?: Interpolate | SignalRef;
   /**
    * Depending on the interpolation type, sets the tension parameter (for line and area marks).
    * @minimum 0
    * @maximum 1
    */
-  tension?: number;
+  tension?: number | SignalRef;
 
   /**
    * The default symbol shape to use. One of: `"circle"` (default), `"square"`, `"cross"`, `"diamond"`, `"triangle-up"`, or `"triangle-down"`, or a custom SVG path.
@@ -196,7 +189,7 @@ export interface MarkConfig {
    * __Default value:__ `"circle"`
    *
    */
-  shape?: SymbolShape;
+  shape?: SymbolShape | SignalRef;
 
   /**
    * The pixel area each the point/circle/square.
@@ -206,7 +199,7 @@ export interface MarkConfig {
    *
    * @minimum 0
    */
-  size?: number;
+  size?: number | SignalRef;
 
   // Text / Label Mark Config
   /**
@@ -219,7 +212,7 @@ export interface MarkConfig {
    * @minimum 0
    * @maximum 360
    */
-  angle?: number;
+  angle?: number | SignalRef;
 
   /**
    * The vertical alignment of the text. One of `"top"`, `"bottom"`, `"middle"`, `"alphabetic"`.
@@ -227,81 +220,81 @@ export interface MarkConfig {
    * __Default value:__ `"middle"`
    *
    */
-  baseline?: TextBaseline;
+  baseline?: TextBaseline | SignalRef;
 
   /**
    * The horizontal offset, in pixels, between the text label and its anchor point. The offset is applied after rotation by the _angle_ property.
    */
-  dx?: number;
+  dx?: number | SignalRef;
 
   /**
    * The vertical offset, in pixels, between the text label and its anchor point. The offset is applied after rotation by the _angle_ property.
    */
-  dy?: number;
+  dy?: number | SignalRef;
 
   /**
    * Polar coordinate radial offset, in pixels, of the text label from the origin determined by the `x` and `y` properties.
    * @minimum 0
    */
-  radius?: number;
+  radius?: number | SignalRef;
 
   /**
    * The maximum length of the text mark in pixels (default 0, indicating no limit). The text value will be automatically truncated if the rendered size exceeds the limit.
    */
-  limit?: number;
+  limit?: number | SignalRef;
 
   /**
    * A delimiter, such as a newline character, upon which to break text strings into multiple lines. This property is ignored if the text is array-valued.
    */
-  lineBreak?: string;
+  lineBreak?: string | SignalRef;
 
   /**
    * The line height in pixels (the spacing between subsequent lines of text) for multi-line text marks.
    */
-  lineHeight?: number;
+  lineHeight?: number | SignalRef;
 
   /**
    * Polar coordinate angle, in radians, of the text label from the origin determined by the `x` and `y` properties. Values for `theta` follow the same convention of `arc` mark `startAngle` and `endAngle` properties: angles are measured in radians, with `0` indicating "north".
    */
-  theta?: number;
+  theta?: number | SignalRef;
 
   /**
    * The typeface to set the text in (e.g., `"Helvetica Neue"`).
    */
-  font?: string;
+  font?: string | SignalRef;
 
   /**
    * The font size, in pixels.
    * @minimum 0
    */
-  fontSize?: number;
+  fontSize?: number | SignalRef;
 
   /**
    * The font style (e.g., `"italic"`).
    */
-  fontStyle?: FontStyle;
+  fontStyle?: FontStyle | SignalRef;
   /**
    * The font weight.
    * This can be either a string (e.g `"bold"`, `"normal"`) or a number (`100`, `200`, `300`, ..., `900` where `"normal"` = `400` and `"bold"` = `700`).
    */
-  fontWeight?: FontWeight;
+  fontWeight?: FontWeight | SignalRef;
 
   /**
    * Placeholder text if the `text` channel is not specified
    */
-  text?: string;
+  text?: string | SignalRef;
 
   /**
    * A URL to load upon mouse click. If defined, the mark acts as a hyperlink.
    *
    * @format uri
    */
-  href?: string;
+  href?: string | SignalRef;
 
   /**
    * The mouse cursor used over the mark. Any valid [CSS cursor type](https://developer.mozilla.org/en-US/docs/Web/CSS/cursor#Values) can be used.
    */
-  cursor?: Cursor;
+  cursor?: Cursor | SignalRef;
 }
 
 export type Cursor =
@@ -368,28 +361,28 @@ export interface LegendConfig extends BaseLegend {
   /**
    * The maximum allowed length in pixels of color ramp gradient labels.
    */
-  gradientLabelLimit?: NumberValue;
+  gradientLabelLimit?: number | SignalRef;
 
   /**
    * Vertical offset in pixels for color ramp gradient labels.
    *
    * __Default value:__ `2`.
    */
-  gradientLabelOffset?: NumberValue;
+  gradientLabelOffset?: number | SignalRef;
 
   /**
    * Default fill color for legend symbols. Only applied if there is no `"fill"` scale color encoding for the legend.
    *
    * __Default value:__ `"transparent"`.
    */
-  symbolBaseFillColor?: ColorValue;
+  symbolBaseFillColor?: null | Color | SignalRef;
 
   /**
    * Default stroke color for legend symbols. Only applied if there is no `"fill"` scale color encoding for the legend.
    *
    * __Default value:__ `"gray"`.
    */
-  symbolBaseStrokeColor?: ColorValue;
+  symbolBaseStrokeColor?: null | Color | SignalRef;
 
   /**
    * The default direction (`"horizontal"` or `"vertical"`) for symbol legends.
@@ -401,12 +394,12 @@ export interface LegendConfig extends BaseLegend {
   /**
    * Border stroke dash pattern for the full legend.
    */
-  strokeDash?: number[];
+  strokeDash?: number[] | SignalRef;
 
   /**
    * Border stroke width for the full legend.
    */
-  strokeWidth?: NumberValue;
+  strokeWidth?: number | SignalRef;
 
   /**
    * Legend orient group layout parameters.
@@ -414,42 +407,36 @@ export interface LegendConfig extends BaseLegend {
   layout?: LegendLayout;
 }
 
-export interface BaseLegendLayout<
-  NS = number | SignalRef,
-  BS = boolean | SignalRef,
-  OS = Orientation | SignalRef,
-  LB = LayoutBounds,
-  AN = TitleAnchor | SignalRef
-> {
+export interface BaseLegendLayout {
   /**
    * The anchor point for legend orient group layout.
    */
-  anchor?: AN;
+  anchor?: TitleAnchor | SignalRef;
 
   /**
    * The bounds calculation to use for legend orient group layout.
    */
-  bounds?: LB;
+  bounds?: LayoutBounds;
 
   /**
    * A flag to center legends within a shared orient group.
    */
-  center?: BS;
+  center?: boolean | SignalRef;
 
   /**
    * The layout direction for legend orient group layout.
    */
-  direction?: OS;
+  direction?: Orientation | SignalRef;
 
   /**
    * The pixel margin between legends within a orient group.
    */
-  margin?: NS;
+  margin?: number | SignalRef;
 
   /**
    * The pixel offset from the chart body for a legend orient group.
    */
-  offset?: NS;
+  offset?: number | SignalRef;
 }
 
 export interface LegendLayout extends BaseLegendLayout {
