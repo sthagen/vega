@@ -454,7 +454,7 @@
     if (array && (n = array.length)) {
       if (f == null) {
         // find first valid value
-        for (v = array[i]; v == null || v !== v; v = array[++i]);
+        for (v = array[i]; i < n && (v == null || v !== v); v = array[++i]);
         min = max = v;
 
         // visit all other values
@@ -468,7 +468,7 @@
         }
       } else {
         // find first valid value
-        for (v = f(array[i]); v == null || v !== v; v = f(array[++i]));
+        for (v = f(array[i]); i < n && (v == null || v !== v); v = f(array[++i]));
         min = max = v;
 
         // visit all other values
@@ -499,6 +499,7 @@
           break;
         }
       }
+      if (i === n) return [-1, -1];
       u = v = i;
       while (++i < n) {
         b = array[i];
@@ -521,6 +522,7 @@
           break;
         }
       }
+      if (i === n) return [-1, -1];
       u = v = i;
       while (++i < n) {
         b = f(array[i], i, array);
@@ -2737,7 +2739,8 @@
    */
   async function evaluate(encode, prerun, postrun) {
     const df = this,
-          level = df.logLevel();
+          level = df.logLevel(),
+          async = [];
 
     // if the pulse value is set, this is a re-entrant call
     if (df._pulse) return reentrant(df);
@@ -2783,9 +2786,13 @@
         // otherwise, evaluate the operator
         next = op.run(df._getPulse(op, encode));
 
-        // await if operator returned a promise
         if (next.then) {
+          // await if operator returns a promise directly
           next = await next;
+        } else if (next.async) {
+          // queue parallel asynchronous execution
+          async.push(next.async);
+          next = StopPropagation;
         }
 
         if (level >= Debug) {
@@ -2830,6 +2837,13 @@
 
     // invoke postrun function, if provided
     if (postrun) await asyncCallback(df, postrun);
+
+    // handle non-blocking asynchronous callbacks
+    if (async.length) {
+      Promise.all(async).then(cb => df.runAsync(null, () => {
+        cb.forEach(f => { try { f(df); } catch (err) { df.error(err); } });
+      }));
+    }
 
     return df;
   }
@@ -4577,25 +4591,35 @@
       data.sort((a, b) => x(a) - x(b));
     }
 
-    const X = new Float64Array(data.length),
-          Y = new Float64Array(data.length);
+    const n = data.length,
+          X = new Float64Array(n),
+          Y = new Float64Array(n);
 
-    let i = 0;
-    for (let d of data) {
-      X[i] = x(d);
-      Y[i] = y(d);
+    // extract values, calculate means
+    let i = 0, ux = 0, uy = 0, xv, yv, d;
+    for (d of data) {
+      X[i] = xv = +x(d);
+      Y[i] = yv = +y(d);
       ++i;
+      ux += (xv - ux) / i;
+      uy += (yv - uy) / i;
     }
 
-    return [X, Y];
+    // mean center the data
+    for (i=0; i<n; ++i) {
+      X[i] -= ux;
+      Y[i] -= uy;
+    }
+
+    return [X, Y, ux, uy];
   }
 
   function visitPoints(data, x, y, callback) {
-    let index = -1, i = -1, u, v;
+    let i = -1, u, v;
 
     for (let d of data) {
-      u = x(d, ++index, data);
-      v = y(d, index, data);
+      u = x(d);
+      v = y(d);
       if (u != null && (u = +u) >= u && v != null && (v = +v) >= v) {
         callback(u, v, ++i);
       }
@@ -4624,20 +4648,20 @@
     let X = 0, Y = 0, XY = 0, X2 = 0, n = 0;
 
     visitPoints(data, x, y, (dx, dy) => {
-      X += dx;
-      Y += dy;
-      XY += dx * dy;
-      X2 += dx * dx;
       ++n;
+      X += (dx - X) / n;
+      Y += (dy - Y) / n;
+      XY += (dx * dy - XY) / n;
+      X2 += (dx * dx - X2) / n;
     });
 
-    const coef = ols(X / n, Y / n, XY / n, X2 / n),
+    const coef = ols(X, Y, XY, X2),
           predict = x => coef[0] + coef[1] * x;
 
     return {
       coef: coef,
       predict: predict,
-      rSquared: rSquared(data, x, y, Y / n, predict)
+      rSquared: rSquared(data, x, y, Y, predict)
     };
   }
 
@@ -4647,21 +4671,21 @@
     let X = 0, Y = 0, XY = 0, X2 = 0, n = 0;
 
     visitPoints(data, x, y, (dx, dy) => {
-      dx = Math.log(dx);
-      X += dx;
-      Y += dy;
-      XY += dx * dy;
-      X2 += dx * dx;
       ++n;
+      dx = Math.log(dx);
+      X += (dx - X) / n;
+      Y += (dy - Y) / n;
+      XY += (dx * dy - XY) / n;
+      X2 += (dx * dx - X2) / n;
     });
 
-    const coef = ols(X / n, Y / n, XY / n, X2 / n),
+    const coef = ols(X, Y, XY, X2),
           predict = x => coef[0] + coef[1] * Math.log(x);
 
     return {
       coef: coef,
       predict: predict,
-      rSquared: rSquared(data, x, y, Y / n, predict)
+      rSquared: rSquared(data, x, y, Y, predict)
     };
   }
 
@@ -4671,12 +4695,12 @@
     visitPoints(data, x, y, (dx, dy) => {
       const ly = Math.log(dy),
             xy = dx * dy;
-      Y += dy;
-      XY += xy;
-      X2Y += dx * xy;
-      YL += dy * ly;
-      XYL += xy * ly;
       ++n;
+      Y += (dy - Y) / n;
+      XY += (xy - XY) / n;
+      X2Y += (dx * xy - X2Y) / n;
+      YL += (dy * ly - YL) / n;
+      XYL += (xy * ly - XYL) / n;
     });
 
     const coef = ols(XY / Y, YL / Y, XYL / Y, X2Y / Y),
@@ -4687,7 +4711,7 @@
     return {
       coef: coef,
       predict: predict,
-      rSquared: rSquared(data, x, y, Y / n, predict)
+      rSquared: rSquared(data, x, y, Y, predict)
     };
   }
 
@@ -4699,15 +4723,15 @@
     visitPoints(data, x, y, (dx, dy) => {
       const lx = Math.log(dx),
             ly = Math.log(dy);
-      X += lx;
-      Y += ly;
-      XY += lx * ly;
-      X2 += lx * lx;
-      YS += dy;
       ++n;
+      X += (lx - X) / n;
+      Y += (ly - Y) / n;
+      XY += (lx * ly - XY) / n;
+      X2 += (lx * lx - X2) / n;
+      YS += (dy - YS) / n;
     });
 
-    const coef = ols(X / n, Y / n, XY / n, X2 / n),
+    const coef = ols(X, Y, XY, X2),
           predict = x => coef[0] * Math.pow(x, coef[1]);
 
     coef[0] = Math.exp(coef[0]);
@@ -4715,42 +4739,48 @@
     return {
       coef: coef,
       predict: predict,
-      rSquared: rSquared(data, x, y, YS / n, predict)
+      rSquared: rSquared(data, x, y, YS, predict)
     };
   }
 
   function regressionQuad(data, x, y) {
-    let X = 0, Y = 0, X2 = 0, X3 = 0, X4 = 0, XY = 0, X2Y = 0, n = 0;
 
-    visitPoints(data, x, y, (dx, dy) => {
-      const x2 = dx * dx;
-      X += dx;
-      Y += dy;
-      X2 += x2;
-      X3 += x2 * dx;
-      X4 += x2 * x2;
-      XY += dx * dy;
-      X2Y += x2 * dy;
-      ++n;
-    });
+    const [xv, yv, ux, uy] = points(data, x, y),
+          n = xv.length;
 
-    Y = Y / n;
-    XY = XY - X * Y;
-    X2Y = X2Y - X2 * Y;
+    let X2 = 0, X3 = 0, X4 = 0, XY = 0, X2Y = 0,
+        i, dx, dy, x2;
 
-    const XX = X2 - X * X / n,
-          XX2 = X3 - (X2 * X / n),
-          X2X2 = X4 - (X2 * X2 / n),
-          d = (XX * X2X2 - XX2 * XX2),
-          a = (X2Y * XX - XY * XX2) / d,
-          b = (XY * X2X2 - X2Y * XX2) / d,
-          c = Y - (b * (X / n)) - (a * (X2 / n)),
-          predict = x => a * x * x + b * x + c;
+    for (i=0; i<n;) {
+      dx = xv[i];
+      dy = yv[i++];
+      x2 = dx * dx;
+      X2 += (x2 - X2) / i;
+      X3 += (x2 * dx - X3) / i;
+      X4 += (x2 * x2 - X4) / i;
+      XY += (dx * dy - XY) / i;
+      X2Y += (x2 * dy - X2Y) / i;
+    }
 
+    const X2X2 = X4 - (X2 * X2),
+          d = (X2 * X2X2 - X3 * X3),
+          a = (X2Y * X2 - XY * X3) / d,
+          b = (XY * X2X2 - X2Y * X3) / d,
+          c = -a * X2,
+          predict = x => {
+            x = x - ux;
+            return a * x * x + b * x + c + uy;
+          };
+
+    // transform coefficients back from mean-centered space
     return {
-      coef: [c, b, a],
+      coef: [
+        c - b * ux + a * ux * ux + uy,
+        b - 2 * a * ux,
+        a
+      ],
       predict: predict,
-      rSquared: rSquared(data, x, y, Y, predict)
+      rSquared: rSquared(data, x, y, 0, predict)
     };
   }
 
@@ -4764,27 +4794,23 @@
     if (order === 1) return regressionLinear(data, x, y);
     if (order === 2) return regressionQuad(data, x, y);
 
-    const [xv, yv] = points(data, x, y),
+    const [xv, yv, ux, uy] = points(data, x, y),
           n = xv.length,
           lhs = [],
           rhs = [],
           k = order + 1;
 
-    let Y = 0, i, j, l, v, c;
+    let i, j, l, v, c;
 
-    for (i = 0; i < n; ++i) {
-      Y += yv[i];
-    }
-
-    for (i = 0; i < k; ++i) {
-      for (l = 0, v = 0; l < n; ++l) {
+    for (i=0; i<k; ++i) {
+      for (l=0, v=0; l<n; ++l) {
         v += Math.pow(xv[l], i) * yv[l];
       }
       lhs.push(v);
 
       c = new Float64Array(k);
-      for (j = 0; j < k; ++j) {
-        for (l = 0, v = 0; l < n; ++l) {
+      for (j=0; j<k; ++j) {
+        for (l=0, v=0; l<n; ++l) {
           v += Math.pow(xv[l], i + j);
         }
         c[j] = v;
@@ -4795,16 +4821,41 @@
 
     const coef = gaussianElimination(rhs),
           predict = x => {
-            let y = 0, i = 0, n = coef.length;
-            for (; i < n; ++i) y += coef[i] * Math.pow(x, i);
+            x -= ux;
+            let y = uy + coef[0] + coef[1] * x + coef[2] * x * x;
+            for (i=3; i<k; ++i) y += coef[i] * Math.pow(x, i);
             return y;
           };
 
     return {
-      coef: coef,
+      coef: uncenter(k, coef, -ux, uy),
       predict: predict,
-      rSquared: rSquared(data, x, y, Y / n, predict)
+      rSquared: rSquared(data, x, y, 0, predict)
     };
+  }
+
+  function uncenter(k, a, x, y) {
+    const z = Array(k);
+    let i, j, v, c;
+
+    // initialize to zero
+    for (i=0; i<k; ++i) z[i] = 0;
+
+    // polynomial expansion
+    for (i=k-1; i>=0; --i) {
+      v = a[i];
+      c = 1;
+      z[i] += v;
+      for (j=1; j<=i; ++j) {
+        c *= (i + 1 - j) / j; // binomial coefficent
+        z[i-j] += v * Math.pow(x, j) * c;
+      }
+    }
+
+    // bias term
+    z[0] += y;
+
+    return z;
   }
 
   // Given an array for a two-dimensional matrix and the polynomial order,
@@ -4854,7 +4905,7 @@
   // Source: https://github.com/jasondavies/science.js/blob/master/src/stats/loess.js
   // License: https://github.com/jasondavies/science.js/blob/master/LICENSE
   function regressionLoess(data, x, y, bandwidth) {
-    const [xv, yv] = points(data, x, y, true),
+    const [xv, yv, ux, uy] = points(data, x, y, true),
           n = xv.length,
           bw = Math.max(2, ~~(bandwidth * n)), // # nearest neighbors
           yhat = new Float64Array(n),
@@ -4909,7 +4960,7 @@
       }
     }
 
-    return output(xv, yhat);
+    return output(xv, yhat, ux, uy);
   }
 
   // weighting kernel for local regression
@@ -4936,22 +4987,25 @@
 
   // generate smoothed output points
   // average points with repeated x values
-  function output(xv, yhat) {
-    const n = xv.length,
-          out = [];
+  function output(xv, yhat, ux, uy) {
+    const n = xv.length, out = [];
+    let i = 0, cnt = 0, prev = [], v;
 
-    for (let i=0, cnt=0, prev=[], v; i<n; ++i) {
-      v = xv[i];
+    for (; i<n; ++i) {
+      v = xv[i] + ux;
       if (prev[0] === v) {
         // average output values via online update
         prev[1] += (yhat[i] - prev[1]) / (++cnt);
       } else {
         // add new output point
         cnt = 0;
+        prev[1] += uy;
         prev = [v, yhat[i]];
         out.push(prev);
       }
     }
+    prev[1] += uy;
+
     return out;
   }
 
@@ -5559,6 +5613,7 @@
           // maximum bin value (exclusive)
           // use convoluted math for better floating point agreement
           // see https://github.com/vega/vega/issues/830
+          // infinite values propagate through this formula! #2227
           t[b1] = v == null ? null : start + step * (1 + (v - start) / step);
         }
       : function(t) { t[b0] = bins(t); }
@@ -5574,9 +5629,9 @@
 
     var field = _.field,
         bins  = bin(_),
-        start = bins.start,
-        stop  = bins.stop,
         step  = bins.step,
+        start = bins.start,
+        stop  = start + Math.ceil((bins.stop - start) / step) * step,
         a, d;
 
     if ((a = _.anchor) != null) {
@@ -5587,16 +5642,17 @@
 
     var f = function(t) {
       var v = field(t);
-      if (v == null) {
-        return null;
-      } else {
-        v = Math.max(start, Math.min(+v, stop - step));
-        return start + step * Math.floor(EPSILON + (v - start) / step);
-      }
+      return v == null ? null
+        : v < start ? -Infinity
+        : v > stop ? +Infinity
+        : (
+            v = Math.max(start, Math.min(+v, stop - step)),
+            start + step * Math.floor(EPSILON + (v - start) / step)
+          );
     };
 
     f.start = start;
-    f.stop = stop;
+    f.stop = bins.stop;
     f.step = step;
 
     return this.value = accessor(
@@ -7044,6 +7100,7 @@
    */
   function Load(params) {
     Transform.call(this, [], params);
+    this._pending = null;
   }
 
   var prototype$q = inherits(Load, Transform);
@@ -7051,21 +7108,42 @@
   prototype$q.transform = function(_, pulse) {
     const df = pulse.dataflow;
 
+    if (this._pending) {
+      // update state and return pulse
+      return output$1(this, pulse, this._pending);
+    }
+
+    if (stop(_)) return pulse.StopPropagation;
+
     if (_.values) {
-      // parse and ingest values
+      // parse and ingest values, return output pulse
       return output$1(this, pulse, df.parse(_.values, _.format));
+    } else if (_.async) {
+      // return promise for non-blocking async loading
+      const p = df.request(_.url, _.format).then(res => {
+        this._pending = array(res.data);
+        return df => df.touch(this);
+      });
+      return {async: p};
     } else {
-      // return promise for async loading
+      // return promise for synchronous loading
       return df.request(_.url, _.format)
         .then(res => output$1(this, pulse, array(res.data)));
     }
   };
 
+  function stop(_) {
+    return _.modified('async') && !(
+      _.modified('values') || _.modified('url') || _.modified('format')
+    );
+  }
+
   function output$1(op, pulse, data) {
     data.forEach(ingest);
     const out = pulse.fork(pulse.NO_FIELDS & pulse.NO_SOURCE);
     out.rem = op.value;
-    op.value = out.add = out.source = data;
+    op.value = out.source = out.add = data;
+    op._pending = null;
     return out;
   }
 
@@ -9272,10 +9350,11 @@
     return result;
   }
 
-  var DegToRad = Math.PI / 180;
-  var HalfPi = Math.PI / 2;
-  var Tau = Math.PI * 2;
-  var HalfSqrt3 = Math.sqrt(3) / 2;
+  const DegToRad = Math.PI / 180;
+  const Epsilon = 1e-14;
+  const HalfPi = Math.PI / 2;
+  const Tau = Math.PI * 2;
+  const HalfSqrt3 = Math.sqrt(3) / 2;
 
   var segmentCache = {};
   var bezierCache = {};
@@ -10198,7 +10277,7 @@
     return item.strokeJoin && item.strokeJoin !== 'miter' ? 0 : strokeWidth;
   }
 
-  var bounds,
+  var bounds, lx, ly,
       circleThreshold = Tau - 1e-8;
 
   function context(_) {
@@ -10210,75 +10289,110 @@
 
   function add$1(x, y) { bounds.add(x, y); }
 
+  function addL(x, y) { add$1(lx = x, ly = y); }
+
+  function addX(x) { add$1(x, bounds.y1); }
+
+  function addY(y) { add$1(bounds.x1, y); }
+
   context.beginPath = noop;
 
   context.closePath = noop;
 
-  context.moveTo = add$1;
+  context.moveTo = addL;
 
-  context.lineTo = add$1;
+  context.lineTo = addL;
 
   context.rect = function(x, y, w, h) {
-    add$1(x, y);
     add$1(x + w, y + h);
+    addL(x, y);
   };
 
   context.quadraticCurveTo = function(x1, y1, x2, y2) {
-    add$1(x1, y1);
-    add$1(x2, y2);
+    quadExtrema(lx, x1, x2, addX);
+    quadExtrema(ly, y1, y2, addY);
+    addL(x2, y2);
   };
+
+  function quadExtrema(x0, x1, x2, cb) {
+    const t = (x0 - x1) / (x0 + x2 - 2 * x1);
+    if (0 < t && t < 1) cb(x0 + (x1 - x0) * t);
+  }
 
   context.bezierCurveTo = function(x1, y1, x2, y2, x3, y3) {
-    add$1(x1, y1);
-    add$1(x2, y2);
-    add$1(x3, y3);
+    cubicExtrema(lx, x1, x2, x3, addX);
+    cubicExtrema(ly, y1, y2, y3, addY);
+    addL(x3, y3);
   };
 
+  function cubicExtrema(x0, x1, x2, x3, cb) {
+    const a = x3 - x0 + 3 * x1 - 3 * x2,
+          b = x0 + x2 - 2 * x1,
+          c = x0 - x1;
+
+    let t0 = 0, t1 = 0, r;
+
+    // solve for parameter t
+    if (Math.abs(a) > Epsilon) {
+      // quadratic equation
+      r = b * b + c * a;
+      if (r >= 0) {
+        r = Math.sqrt(r);
+        t0 = (-b + r) / a;
+        t1 = (-b - r) / a;
+      }
+    } else {
+      // linear equation
+      t0 = 0.5 * c / b;
+    }
+
+    // calculate position
+    if (0 < t0 && t0 < 1) cb(cubic(t0, x0, x1, x2, x3));
+    if (0 < t1 && t1 < 1) cb(cubic(t1, x0, x1, x2, x3));
+  }
+
+  function cubic(t, x0, x1, x2, x3) {
+    const s = 1 - t, s2 = s * s, t2 = t * t;
+    return (s2 * s * x0) + (3 * s2 * t * x1) + (3 * s * t2 * x2) + (t2 * t * x3);
+  }
+
   context.arc = function(cx, cy, r, sa, ea, ccw) {
+    // store last point on path
+    lx = r * Math.cos(ea) + cx;
+    ly = r * Math.sin(ea) + cy;
+
     if (Math.abs(ea - sa) > circleThreshold) {
+      // treat as full circle
       add$1(cx - r, cy - r);
       add$1(cx + r, cy + r);
-      return;
-    }
+    } else {
+      const update = a => add$1(r * Math.cos(a) + cx, r * Math.sin(a) + cy);
+      let s, i;
 
-    var xmin = Infinity, xmax = -Infinity,
-        ymin = Infinity, ymax = -Infinity,
-        s, i, x, y;
+      // sample end points
+      update(sa);
+      update(ea);
 
-    function update(a) {
-      x = r * Math.cos(a);
-      y = r * Math.sin(a);
-      if (x < xmin) xmin = x;
-      if (x > xmax) xmax = x;
-      if (y < ymin) ymin = y;
-      if (y > ymax) ymax = y;
-    }
+      // sample interior points aligned with 90 degrees
+      if (ea !== sa) {
+        sa = sa % Tau; if (sa < 0) sa += Tau;
+        ea = ea % Tau; if (ea < 0) ea += Tau;
 
-    // Sample end points and interior points aligned with 90 degrees
-    update(sa);
-    update(ea);
+        if (ea < sa) {
+          ccw = !ccw; // flip direction
+          s = sa; sa = ea; ea = s; // swap end-points
+        }
 
-    if (ea !== sa) {
-      sa = sa % Tau; if (sa < 0) sa += Tau;
-      ea = ea % Tau; if (ea < 0) ea += Tau;
-
-      if (ea < sa) {
-        ccw = !ccw; // flip direction
-        s = sa; sa = ea; ea = s; // swap end-points
-      }
-
-      if (ccw) {
-        ea -= Tau;
-        s = sa - (sa % HalfPi);
-        for (i=0; i<4 && s>ea; ++i, s-=HalfPi) update(s);
-      } else {
-        s = sa - (sa % HalfPi) + HalfPi;
-        for (i=0; i<4 && s<ea; ++i, s=s+HalfPi) update(s);
+        if (ccw) {
+          ea -= Tau;
+          s = sa - (sa % HalfPi);
+          for (i=0; i<4 && s>ea; ++i, s-=HalfPi) update(s);
+        } else {
+          s = sa - (sa % HalfPi) + HalfPi;
+          for (i=0; i<4 && s<ea; ++i, s=s+HalfPi) update(s);
+        }
       }
     }
-
-    add$1(cx + xmin, cy + ymin);
-    add$1(cx + xmax, cy + ymax);
   };
 
   var context$1 = (context$1 = domCanvas(1,1))
@@ -10790,19 +10904,37 @@
     return 'url(#' + id + ')';
   }
 
-  var StrokeOffset = 0.5;
+  function offset$1(item) {
+    var sw = (sw = item.strokeWidth) != null ? sw : 1;
+    return item.strokeOffset != null ? item.strokeOffset
+      : item.stroke && sw > 0.5 && sw < 1.5 ? 0.5 - Math.abs(sw - 1)
+      : 0;
+  }
 
   function attr(emit, item) {
     emit('transform', translateItem(item));
   }
 
-  function background(emit, item) {
-    var offset = item.stroke ? StrokeOffset : 0;
-    emit('class', 'background');
-    emit('d', rectangle(null, item, offset, offset));
+  function emitRectangle(emit, item) {
+    var off = offset$1(item);
+    emit('d', rectangle(null, item, off, off));
   }
 
-  function foreground(emit, item, renderer) {
+  function background(emit, item) {
+    emit('class', 'background');
+    emitRectangle(emit, item);
+  }
+
+  function foreground(emit, item) {
+    emit('class', 'foreground');
+    if (item.strokeForeground) {
+      emitRectangle(emit, item);
+    } else {
+      emit('d', '');
+    }
+  }
+
+  function content(emit, item, renderer) {
     var url = item.clip ? clip$1(renderer, item, item) : null;
     emit('clip-path', url);
   }
@@ -10824,13 +10956,14 @@
     return bounds.translate(group.x || 0, group.y || 0);
   }
 
-  function backgroundPath(context, group) {
-    var offset = group.stroke ? StrokeOffset : 0;
+  function rectanglePath(context, group, x, y) {
+    var off = offset$1(group);
     context.beginPath();
-    rectangle(context, group, offset, offset);
+    rectangle(context, group, (x || 0) + off, (y || 0) + off);
   }
 
-  var hitBackground = hitPath(backgroundPath);
+  var hitBackground = hitPath(rectanglePath);
+  var hitForeground = hitPath(rectanglePath, false);
 
   function draw(context, scene, bounds) {
     var renderer = this;
@@ -10838,27 +10971,23 @@
     visit(scene, function(group) {
       var gx = group.x || 0,
           gy = group.y || 0,
-          opacity;
-
-      // setup graphics context
-      context.save();
-      context.translate(gx, gy);
+          fore = group.strokeForeground,
+          opacity = group.opacity == null ? 1 : group.opacity;
 
       // draw group background
-      if (group.stroke || group.fill) {
-        opacity = group.opacity == null ? 1 : group.opacity;
-        if (opacity > 0) {
-          backgroundPath(context, group);
-          if (group.fill && fill(context, group, opacity)) {
-            context.fill();
-          }
-          if (group.stroke && stroke(context, group, opacity)) {
-            context.stroke();
-          }
+      if ((group.stroke || group.fill) && opacity) {
+        rectanglePath(context, group, gx, gy);
+        if (group.fill && fill(context, group, opacity)) {
+          context.fill();
+        }
+        if (group.stroke && !fore && stroke(context, group, opacity)) {
+          context.stroke();
         }
       }
 
-      // set clip and bounds
+      // setup graphics context, set clip and bounds
+      context.save();
+      context.translate(gx, gy);
       if (group.clip) clipGroup(context, group);
       if (bounds) bounds.translate(-gx, -gy);
 
@@ -10870,6 +10999,14 @@
       // restore graphics context
       if (bounds) bounds.translate(gx, gy);
       context.restore();
+
+      // draw group foreground
+      if (fore && group.stroke && opacity) {
+        rectanglePath(context, group, gx, gy);
+        if (stroke(context, group, opacity)) {
+          context.stroke();
+        }
+      }
     });
   }
 
@@ -10883,7 +11020,7 @@
         cy = y * context.pixelRatio;
 
     return pickVisit(scene, function(group) {
-      var hit, dx, dy, dw, dh, b, c;
+      var hit, fore, ix, dx, dy, dw, dh, b, c;
 
       // first hit test bounding box
       b = group.bounds;
@@ -10906,7 +11043,17 @@
       // test background for rounded corner clip
       if (c && hasCornerRadius(group) && !hitBackground(context, group, cx, cy)) {
         context.restore();
-        return;
+        return null;
+      }
+
+      fore = group.strokeForeground;
+      ix = scene.interactive !== false;
+
+      // hit test against group foreground
+      if (ix && fore && group.stroke
+          && hitForeground(context, group, cx, cy)) {
+        context.restore();
+        return group;
       }
 
       // hit test against contained marks
@@ -10917,8 +11064,7 @@
       });
 
       // hit test against group background
-      if (!hit && scene.interactive !== false
-          && (group.fill || group.stroke)
+      if (!hit && ix && (group.fill || (!fore && group.stroke))
           && hitBackground(context, group, cx, cy)) {
         hit = group;
       }
@@ -10943,6 +11089,7 @@
     draw:       draw,
     pick:       pick$1,
     isect:      intersectRect,
+    content:    content,
     background: background,
     foreground: foreground
   };
@@ -11347,7 +11494,7 @@
       fontFamily(item, quote);
   }
 
-  function offset$1(item) {
+  function offset$2(item) {
     // perform our own font baseline calculation
     // why? not all browsers support SVG 1.1 'alignment-baseline' :(
     var baseline = item.baseline,
@@ -11385,7 +11532,7 @@
 
   function attr$5(emit, item) {
     var dx = item.dx || 0,
-        dy = (item.dy || 0) + offset$1(item),
+        dy = (item.dy || 0) + offset$2(item),
         p = anchorPoint(item),
         x = p.x1,
         y = p.y1,
@@ -11409,7 +11556,7 @@
         x = p.x1,
         y = p.y1,
         dx = item.dx || 0,
-        dy = (item.dy || 0) + offset$1(item) - Math.round(0.8*h), // use 4/5 offset
+        dy = (item.dy || 0) + offset$2(item) - Math.round(0.8*h), // use 4/5 offset
         tl = textLines(item),
         w;
 
@@ -11463,7 +11610,7 @@
         x = y = 0; // reset x, y
       }
       x += (item.dx || 0);
-      y += (item.dy || 0) + offset$1(item);
+      y += (item.dy || 0) + offset$2(item);
 
       tl = textLines(item);
       if (isArray(tl)) {
@@ -11595,6 +11742,7 @@
     'fill', 'fillOpacity', 'opacity',                             // fill
     'stroke', 'strokeOpacity', 'strokeWidth', 'strokeCap',        // stroke
     'strokeDash', 'strokeDashOffset',                             // stroke dash
+    'strokeForeground', 'strokeOffset',                           // group
     'startAngle', 'endAngle', 'innerRadius', 'outerRadius',       // arc
     'cornerRadius', 'padAngle',                                   // arc, rect
     'cornerRadiusTopLeft', 'cornerRadiusTopRight',                // rect, group
@@ -12819,6 +12967,7 @@
       mask.setAttribute('width', clip.width);
       mask.setAttribute('height', clip.height);
     }
+    domClear(el, 1);
 
     return index + 1;
   }
@@ -12961,7 +13110,7 @@
 
   // Recursively process group contents.
   function recurse(renderer, el, group) {
-    el = el.lastChild;
+    el = el.lastChild.previousSibling;
     var prev, idx = 0;
 
     visit(group, function(item) {
@@ -12988,16 +13137,20 @@
         node.__data__ = item;
         node.__values__ = {fill: 'default'};
 
-        // if group, create background and foreground elements
+        // if group, create background, content, and foreground elements
         if (tag === 'g') {
           var bg = domCreate(doc, 'path', ns);
-          bg.setAttribute('class', 'background');
           node.appendChild(bg);
           bg.__data__ = item;
 
-          var fg = domCreate(doc, 'g', ns);
+          var cg = domCreate(doc, 'g', ns);
+          node.appendChild(cg);
+          cg.__data__ = item;
+
+          var fg = domCreate(doc, 'path', ns);
           node.appendChild(fg);
           fg.__data__ = item;
+          fg.__values__ = {fill: 'default'};
         }
       }
     }
@@ -13025,18 +13178,46 @@
   // Extra configuration for certain mark types
   var mark_extras = {
     group: function(mdef, el, item) {
-      values = el.__values__; // use parent's values hash
+      var fg, bg;
 
-      element = el.childNodes[1];
+      element = fg = el.childNodes[2];
+      values = fg.__values__;
       mdef.foreground(emit, item, this);
 
-      element = el.childNodes[0];
+      values = el.__values__; // use parent's values hash
+      element = el.childNodes[1];
+      mdef.content(emit, item, this);
+
+      element = bg = el.childNodes[0];
       mdef.background(emit, item, this);
 
       var value = item.mark.interactive === false ? 'none' : null;
       if (value !== values.events) {
-        element.style.setProperty('pointer-events', value);
+        fg.style.setProperty('pointer-events', value);
+        bg.style.setProperty('pointer-events', value);
         values.events = value;
+      }
+
+      if (item.strokeForeground && item.stroke) {
+        const fill = item.fill;
+        fg.style.removeProperty('display');
+
+        // set style of background
+        this.style(bg, item);
+        bg.style.removeProperty('stroke');
+
+        // set style of foreground
+        if (fill) item.fill = null;
+        values = fg.__values__;
+        this.style(fg, item);
+        if (fill) item.fill = fill;
+
+        // leave element null to prevent downstream styling
+        element = null;
+      } else {
+        // ensure foreground is ignored
+        fg.style.setProperty('display', 'none');
+        fg.style.setProperty('fill', 'none');
       }
     },
     image: function(mdef, el, item) {
@@ -13115,7 +13296,7 @@
 
     // apply svg css styles
     // note: element may be modified by 'extra' method
-    this.style(element, item);
+    if (element) this.style(element, item);
   };
 
   function emit(name, value, ns) {
@@ -13418,12 +13599,33 @@
           str += escape_text(textValue(item, tl));
         }
       } else if (tag === 'g') {
+        const fore = item.strokeForeground,
+              fill = item.fill,
+              stroke = item.stroke;
+
+        if (fore && stroke) {
+          item.stroke = null;
+        }
+
         str += openTag('path', renderer.attributes(mdef.background, item),
           applyStyles(item, scene, 'bgrect', defs)) + closeTag('path');
 
-        str += openTag('g', renderer.attributes(mdef.foreground, item))
+        str += openTag('g', renderer.attributes(mdef.content, item))
           + renderer.markGroup(item)
           + closeTag('g');
+
+        if (fore && stroke) {
+          if (fill) item.fill = null;
+          item.stroke = stroke;
+
+          str += openTag('path', renderer.attributes(mdef.foreground, item),
+            applyStyles(item, scene, 'bgrect', defs)) + closeTag('path');
+
+          if (fill) item.fill = fill;
+        } else {
+          str += openTag('path', renderer.attributes(mdef.foreground, item),
+            applyStyles({}, scene, 'bgfore', defs)) + closeTag('path');
+        }
       }
 
       str += closeTag(tag);
@@ -13457,6 +13659,13 @@
 
     if (tag === 'bgrect' && mark.interactive === false) {
       s += 'pointer-events: none; ';
+    }
+
+    if (tag === 'bgfore') {
+      if (mark.interactive === false) {
+        s += 'pointer-events: none; ';
+      }
+      s += 'display: none; ';
     }
 
     if (tag === 'image') {
@@ -15028,77 +15237,12 @@
   const Band = 'band';
   const BinOrdinal = 'bin-ordinal';
 
-  function isValidScaleType(type) {
-    switch (type) {
-      case Identity:
-      case Linear:
-      case Log:
-      case Pow:
-      case Sqrt:
-      case Symlog:
-      case Time:
-      case UTC:
-      case Sequential:
-      case Quantile$1:
-      case Quantize:
-      case Threshold:
-      case Ordinal:
-      case Point:
-      case Band:
-      case BinOrdinal:
-        return true;
-    }
-    return false;
-  }
-
-  function isQuantile(key) {
-    return key === Quantile$1;
-  }
-
-  function isSequential(key) {
-    return key && key.startsWith(Sequential);
-  }
-
-  function isDiverging(key) {
-    return key && key.startsWith(Diverging);
-  }
-
-  function isInterpolating(key) {
-    return isSequential(key) || isDiverging(key);
-  }
-
-  function isLogarithmic(key) {
-    return key === Log || key.endsWith('-log');
-  }
-
-  function isContinuous(key) {
-    switch (key) {
-      case Linear:
-      case Log:
-      case Pow:
-      case Sqrt:
-      case Symlog:
-      case Time:
-      case UTC:
-      case Sequential:
-        return true;
-    }
-    return false;
-  }
-
-  function isDiscrete(key) {
-    return key === BinOrdinal
-      || key === Ordinal
-      || key === Band
-      || key === Point;
-  }
-
-  function isDiscretizing(key) {
-    return key === BinOrdinal
-      || key === Quantile$1
-      || key === Quantize
-      || key === Threshold;
-  }
+  // categories
+  const Continuous = 'continuous';
+  const Discrete = 'discrete';
+  const Discretizing = 'discretizing';
+  const Interpolating = 'interpolating';
+  const Temporal = 'temporal';
 
   function invertRange(scale) {
     return function(_) {
@@ -15592,7 +15736,7 @@
             z.push(t);
           }
         }
-        if (!z.length) z = ticks(u, v, n);
+        if (z.length * 2 < n) z = ticks(u, v, n);
       } else {
         z = ticks(i, j, Math.min(j - i, n)).map(pows);
       }
@@ -16421,11 +16565,14 @@
     return scale;
   }
 
+  // scale registry
+  const scales = {};
+
   /**
    * Augment scales with their type and needed inverse methods.
    */
-  function create(type, constructor) {
-    return function scale() {
+  function create(type, constructor, metadata) {
+    const ctr = function scale() {
       var s = constructor();
 
       if (!s.invertRange) {
@@ -16437,59 +16584,90 @@
       s.type = type;
       return s;
     };
+
+    ctr.metadata = toSet(array(metadata));
+
+    return ctr;
   }
 
-  function scale$2(type, scale) {
+  function scale$2(type, scale, metadata) {
     if (arguments.length > 1) {
-      scales[type] = create(type, scale);
+      scales[type] = create(type, scale, metadata);
       return this;
     } else {
-      return hasOwnProperty(scales, type) ? scales[type] : undefined;
+      return isValidScaleType(type) ? scales[type] : undefined;
     }
   }
 
-  var scales = {
-    // identity scale
-    [Identity]:      identity$2,
+  // identity scale
+  scale$2(Identity, identity$2);
 
-    // continuous scales
-    [Linear]:        linear,
-    [Log]:           log$2,
-    [Pow]:           pow$1,
-    [Sqrt]:          sqrt,
-    [Symlog]:        symlog$1,
-    [Time]:          time,
-    [UTC]:           utcTime,
+  // continuous scales
+  scale$2(Linear, linear, Continuous);
+  scale$2(Log, log$2, [Continuous, Log]);
+  scale$2(Pow, pow$1, Continuous);
+  scale$2(Sqrt, sqrt, Continuous);
+  scale$2(Symlog, symlog$1, Continuous);
+  scale$2(Time, time, [Continuous, Temporal]);
+  scale$2(UTC, utcTime, [Continuous, Temporal]);
 
-    // sequential scales
-    [Sequential]:             sequential, // backwards compat
-    [Sequential+'-'+Linear]:  sequential,
-    [Sequential+'-'+Log]:     sequentialLog,
-    [Sequential+'-'+Pow]:     sequentialPow,
-    [Sequential+'-'+Sqrt]:    sequentialSqrt,
-    [Sequential+'-'+Symlog]:  sequentialSymlog,
+  // sequential scales
+  scale$2(Sequential, sequential, [Continuous, Interpolating]); // backwards compat
+  scale$2(`${Sequential}-${Linear}`, sequential, [Continuous, Interpolating]);
+  scale$2(`${Sequential}-${Log}`, sequentialLog, [Continuous, Interpolating, Log]);
+  scale$2(`${Sequential}-${Pow}`, sequentialPow, [Continuous, Interpolating]);
+  scale$2(`${Sequential}-${Sqrt}`, sequentialSqrt, [Continuous, Interpolating]);
+  scale$2(`${Sequential}-${Symlog}`, sequentialSymlog, [Continuous, Interpolating]);
 
-    // diverging scales
-    [Diverging+'-'+Linear]:   diverging,
-    [Diverging+'-'+Log]:      divergingLog,
-    [Diverging+'-'+Pow]:      divergingPow,
-    [Diverging+'-'+Sqrt]:     divergingSqrt,
-    [Diverging+'-'+Symlog]:   divergingSymlog,
+  // diverging scales
+  scale$2(`${Diverging}-${Linear}`, diverging, [Continuous, Interpolating]);
+  scale$2(`${Diverging}-${Log}`, divergingLog, [Continuous, Interpolating, Log]);
+  scale$2(`${Diverging}-${Pow}`, divergingPow, [Continuous, Interpolating]);
+  scale$2(`${Diverging}-${Sqrt}`, divergingSqrt, [Continuous, Interpolating]);
+  scale$2(`${Diverging}-${Symlog}`, divergingSymlog, [Continuous, Interpolating]);
 
-    // discretizing scales
-    [Quantile$1]:      quantile$1,
-    [Quantize]:      quantize,
-    [Threshold]:     threshold,
+  // discretizing scales
+  scale$2(Quantile$1, quantile$1, [Discretizing, Quantile$1]);
+  scale$2(Quantize, quantize, Discretizing);
+  scale$2(Threshold, threshold, Discretizing);
 
-    // discrete scales
-    [BinOrdinal]:    scaleBinOrdinal,
-    [Ordinal]:       ordinal,
-    [Band]:          band,
-    [Point]:         point$1
-  };
+  // discrete scales
+  scale$2(BinOrdinal, scaleBinOrdinal, [Discrete, Discretizing]);
+  scale$2(Ordinal, ordinal, Discrete);
+  scale$2(Band, band, Discrete);
+  scale$2(Point, point$1, Discrete);
 
-  for (var key$1 in scales) {
-    scale$2(key$1, scales[key$1]);
+  function isValidScaleType(type) {
+    return hasOwnProperty(scales, type);
+  }
+
+  function hasType(key, type) {
+    const s = scales[key];
+    return s && s.metadata[type];
+  }
+
+  function isContinuous(key) {
+    return hasType(key, Continuous);
+  }
+
+  function isDiscrete(key) {
+    return hasType(key, Discrete);
+  }
+
+  function isDiscretizing(key) {
+    return hasType(key, Discretizing);
+  }
+
+  function isLogarithmic(key) {
+    return hasType(key, Log);
+  }
+
+  function isInterpolating(key) {
+    return hasType(key, Interpolating);
+  }
+
+  function isQuantile(key) {
+    return hasType(key, Quantile$1);
   }
 
   const scaleProps = ['clamp', 'base', 'constant', 'exponent'];
@@ -17038,7 +17216,7 @@
   };
 
   var Symbols$1  = 'symbol';
-  var Discrete = 'discrete';
+  var Discrete$1 = 'discrete';
   var Gradient$1 = 'gradient';
 
   const symbols$1 = {
@@ -17095,17 +17273,21 @@
       : tickFormat(scale, count, specifier, formatType, noSkip);
 
     return type === Symbols$1 && isDiscreteRange(scale) ? formatRange(format)
-      : type === Discrete ? formatDiscrete(format)
+      : type === Discrete$1 ? formatDiscrete(format)
       : formatPoint(format);
   }
 
   function formatRange(format) {
     return function(value, index, array) {
-      var limit = array[index + 1] || array.max || +Infinity,
+      var limit = get$3(array[index + 1], get$3(array.max, +Infinity)),
           lo = formatValue(value, format),
           hi = formatValue(limit, format);
-      return lo && hi ? lo + '\u2013' + hi : hi ? '< ' + hi : '\u2265 ' + lo;
+      return lo && hi ? lo + ' \u2013 ' + hi : hi ? '< ' + hi : '\u2265 ' + lo;
     };
+  }
+
+  function get$3(value, dflt) {
+    return value != null ? value : dflt;
   }
 
   function formatDiscrete(format) {
@@ -17209,7 +17391,7 @@
       items = items.map(function(value, index) {
         return ingest({
           index:  index,
-          label:  format(value, index, values),
+          label:  format(value, index, items),
           value:  value,
           offset: offset,
           size:   size(value, _)
@@ -18250,6 +18432,7 @@
       { "name": "zero", "type": "boolean", "default": true },
       { "name": "smooth", "type": "boolean", "default": true },
       { "name": "scale", "type": "number", "expr": true },
+      { "name": "translate", "type": "number", "array": true, "expr": true },
       { "name": "as", "type": "string", "null": true, "default": "contour" }
     ]
   };
@@ -18278,10 +18461,7 @@
       );
 
       // adjust contour path coordinates as needed
-      if (_.scale || grid.x1 || grid.y1 || grid.scale) {
-        var s = _.scale;
-        paths.forEach(transform$1(grid, isFunction(s) ? s(t, _) : s));
-      }
+      transformPaths(paths, grid, t, _);
 
       // ingest; copy source data properties to output
       paths.forEach(p => {
@@ -18302,22 +18482,38 @@
       : q(values.map(t => max(f(t).values)));
   }
 
-  function transform$1(grid, scale) {
+  function transformPaths(paths, grid, datum, _) {
+    let s = _.scale || grid.scale,
+        t = _.translate || grid.translate;
+    if (isFunction(s)) s = s(datum, _);
+    if (isFunction(t)) t = t(datum, _);
+    if ((s === 1 || s == null) && !t) return;
+
+    const sx = (isNumber(s) ? s : s[0]) || 1,
+          sy = (isNumber(s) ? s : s[1]) || 1,
+          tx = t && t[0] || 0,
+          ty = t && t[1] || 0;
+
+    paths.forEach(transform$1(grid, sx, sy, tx, ty));
+  }
+
+  function transform$1(grid, sx, sy, tx, ty) {
     const x1 = grid.x1 || 0,
           y1 = grid.y1 || 0,
-          s = scale != null ? scale : (grid.scale || 1);
+          flip = sx * sy < 0;
 
     function transformPolygon(coordinates) {
       coordinates.forEach(transformRing);
     }
 
     function transformRing(coordinates) {
+      if (flip) coordinates.reverse(); // maintain winding order
       coordinates.forEach(transformPoint);
     }
 
     function transformPoint(coordinates) {
-      coordinates[0] = (coordinates[0] - x1) * s;
-      coordinates[1] = (coordinates[1] - y1) * s;
+      coordinates[0] = (coordinates[0] - x1) * sx + tx;
+      coordinates[1] = (coordinates[1] - y1) * sy + ty;
     }
 
     return function(geometry) {
@@ -18647,7 +18843,7 @@
     if (!values) {
       values = pulse.materialize(pulse.SOURCE).source;
       grid = params(density2D(), _)(values, true);
-      post = transform$1(grid);
+      post = transform$1(grid, grid.scale || 1, grid.scale || 1, 0, 0);
       size = [grid.width, grid.height];
       values = grid.values;
     }
@@ -18744,6 +18940,50 @@
     };
   };
 
+  var abs = Math.abs;
+  var cos = Math.cos;
+  var sin = Math.sin;
+
+  var epsilon$1 = 1e-6;
+  var pi = Math.PI;
+  var halfPi = pi / 2;
+  var sqrt2 = sqrt$1(2);
+
+  function asin(x) {
+    return x > 1 ? halfPi : x < -1 ? -halfPi : Math.asin(x);
+  }
+
+  function sqrt$1(x) {
+    return x > 0 ? Math.sqrt(x) : 0;
+  }
+
+  function mollweideBromleyTheta(cp, phi) {
+    var cpsinPhi = cp * sin(phi), i = 30, delta;
+    do phi -= delta = (phi + sin(phi) - cpsinPhi) / (1 + cos(phi));
+    while (abs(delta) > epsilon$1 && --i > 0);
+    return phi / 2;
+  }
+
+  function mollweideBromleyRaw(cx, cy, cp) {
+
+    function forward(lambda, phi) {
+      return [cx * lambda * cos(phi = mollweideBromleyTheta(cp, phi)), cy * sin(phi)];
+    }
+
+    forward.invert = function(x, y) {
+      return y = asin(y / cy), [x / (cx * cos(y)), asin((2 * y + sin(2 * y)) / cp)];
+    };
+
+    return forward;
+  }
+
+  var mollweideRaw = mollweideBromleyRaw(sqrt2 / halfPi, sqrt2, pi);
+
+  function geoMollweide() {
+    return d3Geo.geoProjection(mollweideRaw)
+        .scale(169.529);
+  }
+
   var defaultPath = d3Geo.geoPath();
 
   var projectionProperties = [
@@ -18826,14 +19066,15 @@
     gnomonic:             d3Geo.geoGnomonic,
     identity:             d3Geo.geoIdentity,
     mercator:             d3Geo.geoMercator,
+    mollweide:            geoMollweide,
     naturalEarth1:        d3Geo.geoNaturalEarth1,
     orthographic:         d3Geo.geoOrthographic,
     stereographic:        d3Geo.geoStereographic,
     transversemercator:   d3Geo.geoTransverseMercator
   };
 
-  for (var key$2 in projections) {
-    projection(key$2, projections[key$2]);
+  for (var key$1 in projections) {
+    projection(key$1, projections[key$1]);
   }
 
   /**
@@ -20749,7 +20990,7 @@
       return p[1];
   }
 
-  const epsilon$1 = 1e-6;
+  const epsilon$2 = 1e-6;
 
   class Path {
     constructor() {
@@ -20775,7 +21016,7 @@
       const y0 = y;
       if (r < 0) throw new Error("negative radius");
       if (this._x1 === null) this._ += `M${x0},${y0}`;
-      else if (Math.abs(this._x1 - x0) > epsilon$1 || Math.abs(this._y1 - y0) > epsilon$1) this._ += "L" + x0 + "," + y0;
+      else if (Math.abs(this._x1 - x0) > epsilon$2 || Math.abs(this._y1 - y0) > epsilon$2) this._ += "L" + x0 + "," + y0;
       if (!r) return;
       this._ += `A${r},${r},0,1,1,${x - r},${y}A${r},${r},0,1,1,${this._x1 = x0},${this._y1 = y0}`;
     }
@@ -21473,7 +21714,7 @@
               style: fontStyle(d),
               weight: fontWeight(d),
               rotate: rotate(d),
-              size: ~~fontSize(d),
+              size: ~~(fontSize(d) + 1e-14),
               padding: padding(d),
               xoff: 0,
               yoff: 0,
@@ -22662,7 +22903,7 @@
     resolvefilter: ResolveFilter
   });
 
-  var version = "5.8.1";
+  var version = "5.9.0";
 
   var Default = 'default';
 
@@ -22751,7 +22992,7 @@
     return Math.max(0, view._viewHeight + padding.top + padding.bottom);
   }
 
-  function offset$2(view) {
+  function offset$3(view) {
     var padding = view.padding(),
         origin = view._origin;
     return [
@@ -22761,7 +23002,7 @@
   }
 
   function resizeRenderer(view) {
-    var origin = offset$2(view),
+    var origin = offset$3(view),
         w = width(view),
         h = height(view);
 
@@ -22810,7 +23051,7 @@
         p, e, translate;
 
     if (el) {
-      translate = offset$2(view);
+      translate = offset$3(view);
       e = event.changedTouches ? event.changedTouches[0] : event;
       p = point(e, el);
       p[0] -= translate[0];
@@ -23175,12 +23416,13 @@
    * Generates a selection list input element.
    */
   function select(bind, el, param, value) {
-    var node = element$1('select', {name: param.signal});
+    var node = element$1('select', {name: param.signal}),
+        label = param.labels || [];
 
-    param.options.forEach(function(option) {
+    param.options.forEach(function(option, i) {
       var attr = {value: option};
       if (valuesEqual(option, value)) attr.selected = true;
-      node.appendChild(element$1('option', attr, option+''));
+      node.appendChild(element$1('option', attr, (label[i] || option)+''));
     });
 
     el.appendChild(node);
@@ -23203,11 +23445,12 @@
    * Generates a radio button group.
    */
   function radio(bind, el, param, value) {
-    var group = element$1('span', {'class': RadioClass});
+    var group = element$1('span', {'class': RadioClass}),
+        label = param.labels || [];
 
     el.appendChild(group);
 
-    bind.elements = param.options.map(function(option) {
+    bind.elements = param.options.map(function(option, i) {
       var id = OptionClass + param.signal + '-' + option;
 
       var attr = {
@@ -23225,7 +23468,7 @@
       });
 
       group.appendChild(input);
-      group.appendChild(element$1('label', {'for': id}, option+''));
+      group.appendChild(element$1('label', {'for': id}, (label[i] || option)+''));
 
       return input;
     });
@@ -23287,7 +23530,7 @@
   function initializeRenderer(view, r, el, constructor, scaleFactor, opt) {
     r = r || new constructor(view.loader());
     return r
-      .initialize(el, width(view), height(view), offset$2(view), scaleFactor, opt)
+      .initialize(el, width(view), height(view), offset$3(view), scaleFactor, opt)
       .background(view._background);
   }
 
@@ -23305,7 +23548,7 @@
     // instantiate scenegraph handler
     var handler = new constructor(view.loader(), trap(view, view.tooltip()))
       .scene(view.scenegraph().root)
-      .initialize(el, offset$2(view), view);
+      .initialize(el, offset$3(view), view);
 
     // transfer event handlers
     if (prevHandler) {
@@ -28094,7 +28337,7 @@
 
   const Symbols$2 = 'symbol';
   const Gradient$2 = 'gradient';
-  const Discrete$1 = 'discrete';
+  const Discrete$2 = 'discrete';
 
   // Encoding channels supported by legends
   // In priority order of 'canonical' scale
@@ -29660,7 +29903,7 @@
     }
 
     // discrete gradient legend
-    else if (type === Discrete$1) {
+    else if (type === Discrete$2) {
       children = [
         legendGradientDiscrete(spec, scale, config, encode.gradient, entryRef),
         legendGradientLabels(spec, config, encode.labels, entryRef)
@@ -29702,12 +29945,12 @@
 
     if (!spec.type && scaleCount(spec) === 1 && (spec.fill || spec.stroke)) {
       type = isContinuous(scaleType) ? Gradient$2
-        : isDiscretizing(scaleType) ? Discrete$1
+        : isDiscretizing(scaleType) ? Discrete$2
         : Symbols$2;
     }
 
     return type !== Gradient$2 ? type
-      : isDiscretizing(scaleType) ? Discrete$1
+      : isDiscretizing(scaleType) ? Discrete$2
       : Gradient$2;
   }
 
@@ -29991,6 +30234,7 @@
   function load$1(scope, data) {
     return Load$1({
       url:    data.url ? scope.property(data.url) : undefined,
+      async:  data.async ? scope.property(data.async) : undefined,
       values: data.values ? scope.property(data.values) : undefined,
       format: scope.objectProperty(data.format)
     });
