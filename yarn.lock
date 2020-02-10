@@ -1566,9 +1566,9 @@
     "@rollup/pluginutils" "^3.0.4"
 
 "@rollup/plugin-node-resolve@^7.0.0":
-  version "7.1.0"
-  resolved "https://registry.yarnpkg.com/@rollup/plugin-node-resolve/-/plugin-node-resolve-7.1.0.tgz#94ed832a0444f5e8c529526303c83f8283e4cbc5"
-  integrity sha512-pN3fQsTYuA/guTDCyAthMHWqupoGVSO4bgUFVK8ulr/zmNY9bY/xewNO2ptHJYZY1FW3KkblF+I4a4MWEBYJQA==
+  version "7.1.1"
+  resolved "https://registry.yarnpkg.com/@rollup/plugin-node-resolve/-/plugin-node-resolve-7.1.1.tgz#8c6e59c4b28baf9d223028d0e450e06a485bb2b7"
+  integrity sha512-14ddhD7TnemeHE97a4rLOhobfYvUVcaYuqTnL8Ti7Jxi9V9Jr5LY7Gko4HZ5k4h4vqQM0gBQt6tsp9xXW94WPA==
   dependencies:
     "@rollup/pluginutils" "^3.0.6"
     "@types/resolve" "0.0.8"
@@ -2616,9 +2616,9 @@ d3-color@1, d3-color@^1.4.0:
   integrity sha512-TzNPeJy2+iEepfiL92LAAB7fvnp/dV2YwANPVHdDWmYMm23qIJBYww3qT8I8C1wXrmrg4UWs7BKc2tKIgyjzHg==
 
 d3-delaunay@^5.1.5:
-  version "5.2.0"
-  resolved "https://registry.yarnpkg.com/d3-delaunay/-/d3-delaunay-5.2.0.tgz#0db64837321ee6f1b1a0f9216eb3fa603f71dfec"
-  integrity sha512-G3gu/LcNQSX1FMZoL9H19O89bUYsQR+TVIdNlz8vzr/ASHV36xfK7eljsuLRP6PsqxrjbiWG6B3/zMUCYJnuUw==
+  version "5.2.1"
+  resolved "https://registry.yarnpkg.com/d3-delaunay/-/d3-delaunay-5.2.1.tgz#0c4b280eb00194986ac4a3df9c81d32bf216cb36"
+  integrity sha512-ZZdeJl6cKRyqYVFYK+/meXvWIrAvZsZTD7WSxl4OPXCmuXNgDyACAClAJHD63zL25TA+IJGURUNO7rFseNFCYw==
   dependencies:
     delaunator "4"
 
@@ -6110,9 +6110,9 @@ rimraf@^2.5.4, rimraf@^2.6.1, rimraf@^2.6.2, rimraf@^2.6.3:
     glob "^7.1.3"
 
 rimraf@^3.0.0:
-  version "3.0.1"
-  resolved "https://registry.yarnpkg.com/rimraf/-/rimraf-3.0.1.tgz#48d3d4cb46c80d388ab26cd61b1b466ae9ae225a"
-  integrity sha512-IQ4ikL8SjBiEDZfk+DFVwqRK8md24RWMEJkdSlgNLkyyAImcjf8SWvU1qFMDOb4igBClbTQ/ugPqXcRwdFTxZw==
+  version "3.0.2"
+  resolved "https://registry.yarnpkg.com/rimraf/-/rimraf-3.0.2.tgz#f1a5402ba6220ad52cc1282bac1ae3aa49fd061a"
+  integrity sha512-JZkJMZkAGFFPP2YqXZXPbMlMBgsxzE8ILs4lMIX/2o0L9UBw9O/Y3o6wFw/i9YLapcUJWwqbi3kdxIPdC62TIA==
   dependencies:
     glob "^7.1.3"
 
