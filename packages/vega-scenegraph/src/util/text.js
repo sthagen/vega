@@ -1,7 +1,8 @@
 import {context} from './canvas/context';
-import {isArray} from 'vega-util';
+import {isArray, lruCache} from 'vega-util';
 
-var currFontHeight;
+// memoize text width measurement
+const widthCache = lruCache();
 
 export var textMetrics = {
   height: fontSize,
@@ -13,32 +14,38 @@ export var textMetrics = {
 
 useCanvas(true);
 
-// make dumb, simple estimate if no canvas is available
-function estimateWidth(item, text) {
-  currFontHeight = fontSize(item);
-  return estimate(textValue(item, text));
+function useCanvas(use) {
+  textMetrics.width = (use && context) ? measureWidth : estimateWidth;
 }
 
-function estimate(text) {
-  return ~~(0.8 * text.length * currFontHeight);
+// make dumb, simple estimate if no canvas is available
+function estimateWidth(item, text) {
+  return _estimateWidth(textValue(item, text), fontSize(item));
+}
+
+function _estimateWidth(text, currentFontHeight) {
+  return ~~(0.8 * text.length * currentFontHeight);
 }
 
 // measure text width if canvas is available
 function measureWidth(item, text) {
-  return fontSize(item) <= 0 ? 0
-    : (context.font = font(item), measure(textValue(item, text)));
+  return fontSize(item) <= 0 || !(text = textValue(item, text)) ? 0
+    : _measureWidth(text, font(item));
 }
 
-function measure(text) {
-  return context.measureText(text).width;
+function _measureWidth(text, currentFont) {
+  const key = `(${currentFont}) ${text}`;
+  let width = widthCache.get(key);
+  if (width === undefined) {
+    context.font = currentFont;
+    width = context.measureText(text).width;
+    widthCache.set(key, width);
+  }
+  return width;
 }
 
 export function fontSize(item) {
-  return item.fontSize != null ? item.fontSize : 11;
-}
-
-function useCanvas(use) {
-  textMetrics.width = (use && context) ? measureWidth : estimateWidth;
+  return item.fontSize != null ? (+item.fontSize || 0) : 11;
 }
 
 export function lineHeight(item) {
@@ -68,20 +75,22 @@ export function textValue(item, line) {
     : line + '';
 }
 
+function widthGetter(item) {
+  if (textMetrics.width === measureWidth) {
+    // we are using canvas
+    const currentFont = font(item);
+    return text => _measureWidth(text, currentFont);
+  } else {
+    // we are relying on estimates
+    const currentFontHeight = fontSize(item);
+    return text => _estimateWidth(text, currentFontHeight);
+  }
+}
+
 function truncate(item, line) {
   var limit = +item.limit,
       text = line + '',
-      width;
-
-  if (textMetrics.width === measureWidth) {
-    // we are using canvas
-    context.font = font(item);
-    width = measure;
-  } else {
-    // we are relying on estimates
-    currFontHeight = fontSize(item);
-    width = estimate;
-  }
+      width = widthGetter(item);
 
   if (width(text) < limit) return text;
 
