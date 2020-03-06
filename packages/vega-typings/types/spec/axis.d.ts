@@ -7,7 +7,6 @@ import {
   TimeInterval,
 } from '.';
 import { Text } from './encode';
-import { LayoutAlign } from './layout';
 import {
   AlignValue,
   AnchorValue,
@@ -438,6 +437,11 @@ export interface BaseAxis {
   labelFlushOffset?: number | SignalRef;
 
   /**
+   * Line height in pixels for multi-line label text.
+   */
+  labelLineHeight?: NumberValue;
+
+  /**
    * The strategy to use for resolving overlap of axis labels. If `false` (the default), no overlap reduction is attempted. If set to `true` or `"parity"`, a strategy of removing every other label is used (this works well for standard linear axes). If set to `"greedy"`, a linear scan of the labels is performed, removing any labels that overlaps with the last visible label (this often works better for log-scaled axes).
    */
   labelOverlap?: LabelOverlap | SignalRef;
@@ -495,6 +499,13 @@ export interface BaseAxis {
    * The opacity of the labels.
    */
   labelOpacity?: NumberValue;
+
+  /**
+   * Position offset in pixels to apply to labels, in addition to tickOffset.
+   *
+   * __Default value:__ `0`
+   */
+  labelOffset?: NumberValue;
 
   /**
    * The padding in pixels between labels and ticks.
