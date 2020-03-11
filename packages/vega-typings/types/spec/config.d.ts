@@ -15,6 +15,7 @@ import {
 import { BaseAxis } from './axis';
 import { Color } from './color';
 import {
+  Blend,
   ColorValueRef,
   Gradient,
   NumericValueRef,
@@ -56,6 +57,10 @@ export interface Config
     view?: boolean | string[];
     window?: boolean | string[];
   };
+
+  /**
+   * A delimiter, such as a newline character, upon which to break text strings into multiple lines. This property provides a global default for text marks, which is overridden by mark or style config settings, and by the "lineBreak" mark encoding channel. If signal-valued, either string or regular expression (regexp) values are valid.
+   */
   lineBreak?: string | SignalRef;
   style?: {
     [style: string]: MarkConfig;
@@ -131,6 +136,13 @@ export interface MarkConfig {
    * @maximum 1
    */
   strokeOpacity?: number | SignalRef;
+
+  /**
+   * The color blend mode for drawing an item on its current background. Any valid [CSS mix-blend-mode](https://developer.mozilla.org/en-US/docs/Web/CSS/mix-blend-mode) value can be used.
+   *
+   * __Default value: `"source-over"`
+   */
+  blend?: Blend;
 
   // ---------- Stroke Style ----------
   /**
