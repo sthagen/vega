@@ -17,7 +17,7 @@ Properties for specifying a title.
 | align         | {% include type t="String" %}  | Horizontal text alignment of the title and subtitle. If specified, this value overrides automatic alignment based on the _anchor_ value. |
 | anchor        | {% include type t="String" %}  | The anchor position for placing the title and subtitle. One of `start`, `middle` (the default), or `end`. For example, with an orientation of `top` these anchor positions map to a left-, center-, or right-aligned title.|
 | angle         | {% include type t="Number" %}  | Angle in degrees of the title and subtitle text. |
-| baseline      | {% include type t="String" %}  | Vertical baseline of the title and subtitle text. |
+| baseline      | {% include type t="String" %}  | Vertical baseline of the title and subtitle text. One of `alphabetic` (default), `top`, `middle`, `bottom`, `line-top`, or `line-bottom`. The `line-top` and `line-bottom` values {% include tag ver="5.10" %} operate similarly to `top` and `bottom`, but are calculated relative to the *lineHeight* rather than *fontSize* alone. |
 | color         | {% include type t="Color" %}   | Text color of the title text. |
 | dx            | {% include type t="Number" %}  | Horizontal offset added to the title and subtitle x-coordinate. {% include tag ver="5.2" %} |
 | dy            | {% include type t="Number" %}  | Vertical offset added to the title and subtitle y-coordinate. {% include tag ver="5.2" %} |
@@ -29,7 +29,7 @@ Properties for specifying a title.
 | frame         | {% include type t="String" %}  | The reference frame for the anchor position, one of `"bounds"` (the default, to anchor relative to the full bounding box) or `"group"` (to anchor relative to the group width or height). |
 | interactive   | {% include type t="Boolean" %} | A boolean flag indicating if the title element should respond to input events such as mouse hover. **Deprecated**: use a [custom _encode_ block](#custom) instead.|
 | limit         | {% include type t="Number" %}  | The maximum allowed length in pixels of title and subtitle text. |
-| lineHeight    | {% include type t="Number" %}  | Line height in pixels for multi-line title text. {% include tag ver="5.7" %} |
+| lineHeight    | {% include type t="Number" %}  | Line height in pixels for multi-line title text or title text with `"line-top"` or `"line-bottom"` baseline. {% include tag ver="5.7" %} |
 | name          | {% include type t="String" %}  | A [mark name](../marks) property to apply to the title text mark. **Deprecated**: use a [custom _encode_ block](#custom) instead.|
 | offset        | {% include type t="Number|Value" %} | The orthogonal offset in pixels by which to displace the title from its position along the edge of the chart.|
 | style         | {% include type t="String|String[]" %}  | A [mark style](../marks) property to apply to the title text mark. If not specified, a default style of `"group-title"` is applied. **Deprecated**: use a [custom _encode_ block](#custom) instead.|

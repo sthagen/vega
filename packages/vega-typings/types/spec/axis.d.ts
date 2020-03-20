@@ -205,7 +205,7 @@ export interface BaseAxis {
   titleY?: NumberValue;
 
   /**
-   * Vertical text baseline for axis titles.
+   * Vertical text baseline for axis titles. One of `"alphabetic"` (default), `"top"`, `"middle"`, `"bottom"`, `"line-top"`, or `"line-bottom"`. The `"line-top"` and `"line-bottom"` values operate similarly to `"top"` and `"bottom"`, but are calculated relative to the *lineHeight* rather than *fontSize* alone.
    */
   titleBaseline?: TextBaselineValue;
 
@@ -245,7 +245,7 @@ export interface BaseAxis {
   titleLimit?: NumberValue;
 
   /**
-   * Line height in pixels for multi-line title text.
+   * Line height in pixels for multi-line title text or title text with `"line-top"` or `"line-bottom"` baseline.
    */
   titleLineHeight?: NumberValue;
 
@@ -413,7 +413,8 @@ export interface BaseAxis {
   labelAlign?: AlignValue;
 
   /**
-   * Vertical text baseline of axis tick labels, overriding the default setting for the current axis orientation. Can be `"top"`, `"middle"`, `"bottom"`, or `"alphabetic"`.
+   * Vertical text baseline of axis tick labels, overriding the default setting for the current axis orientation.
+   * One of `"alphabetic"` (default), `"top"`, `"middle"`, `"bottom"`, `"line-top"`, or `"line-bottom"`. The `"line-top"` and `"line-bottom"` values operate similarly to `"top"` and `"bottom"`, but are calculated relative to the *lineHeight* rather than *fontSize* alone.
    */
   labelBaseline?: TextBaselineValue;
 
@@ -437,7 +438,7 @@ export interface BaseAxis {
   labelFlushOffset?: number | SignalRef;
 
   /**
-   * Line height in pixels for multi-line label text.
+   * Line height in pixels for multi-line label text or label text with `"line-top"` or `"line-bottom"` baseline.
    */
   labelLineHeight?: NumberValue;
 
