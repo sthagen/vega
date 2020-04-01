@@ -114,12 +114,15 @@ prototype.transform = function(_, pulse) {
     return pulse;
   }
 
+  // skip labels with no content
+  source = source.filter(hasBounds);
+
+  // early exit, nothing to do
+  if (!source.length) return;
+
   if (_.sort) {
     source = source.slice().sort(_.sort);
   }
-
-  // skip labels with no content
-  source = source.filter(hasBounds);
 
   items = reset(source);
   pulse = reflow(pulse, _);
