@@ -29,17 +29,15 @@ import { BaseProjection } from './projection';
 import { InitSignal, NewSignal, SignalRef } from './signal';
 import { BaseTitle, TitleAnchor } from './title';
 
-export type ExcludeValueRefKeepSignal<T> =
-  | Exclude<T, ScaledValueRef<any> | NumericValueRef | ColorValueRef>
-  | KeepSignal<T>;
-
 export type KeepSignal<T> = T extends SignalRef ? SignalRef : never;
 
 /**
  * Config properties cannot be scaled or reference fields but they can reference signals.
  */
 export type ExcludeMappedValueRef<T> = {
-  [P in keyof T]: ExcludeValueRefKeepSignal<T[P]>;
+  [P in keyof T]:
+    | Exclude<T[P], ScaledValueRef<any> | NumericValueRef | ColorValueRef>
+    | KeepSignal<T[P]>;
 };
 
 export interface Config
@@ -75,6 +73,9 @@ export interface Config
 export type DefaultsConfig = Record<'prevent' | 'allow', boolean | EventType[]>;
 
 export type MarkConfigKeys = 'mark' | Mark['type'];
+
+export type StrokeCap = 'butt' | 'round' | 'square';
+export type StrokeJoin = 'miter' | 'round' | 'bevel';
 
 export interface MarkConfig {
   /**
@@ -173,7 +174,7 @@ export interface MarkConfig {
    * __Default value:__ `"butt"`
    *
    */
-  strokeCap?: string | SignalRef;
+  strokeCap?: StrokeCap | SignalRef;
 
   /**
    * The stroke line join method. One of `"miter"`, `"round"` or `"bevel"`.
@@ -181,7 +182,7 @@ export interface MarkConfig {
    * __Default value:__ `"miter"`
    *
    */
-  strokeJoin?: string | SignalRef;
+  strokeJoin?: StrokeJoin | SignalRef;
 
   /**
    * The miter limit at which to bevel a line join.
@@ -387,7 +388,7 @@ export interface MarkConfig {
   // ---------- Corner Radius: Bar, Tick, Rect ----------
 
   /**
-   * The radius in pixels of rounded rectangle corners.
+   * The radius in pixels of rounded rectangle or arc corners.
    *
    * __Default value:__ `0`
    */
@@ -475,7 +476,7 @@ export type AxisConfig = ExcludeMappedValueRef<BaseAxis>;
 /**
  * Legend config without signals so we can use it in Vega-Lite.
  */
-export interface LegendConfig extends BaseLegend {
+export interface LegendConfig extends ExcludeMappedValueRef<BaseLegend> {
   /**
    * The default direction (`"horizontal"` or `"vertical"`) for gradient legends.
    *
