@@ -70,7 +70,12 @@ export interface Config
   signals?: (InitSignal | NewSignal)[];
 }
 
-export type DefaultsConfig = Record<'prevent' | 'allow', boolean | EventType[]>;
+/**
+ *  The defaults object should have a single property: either "prevent" (to indicate which events should have default behavior suppressed) or "allow" (to indicate only those events whose default behavior should be allowed).
+ */
+export type DefaultsConfig =
+  | Record<'prevent', boolean | EventType[]>
+  | Record<'allow', boolean | EventType[]>;
 
 export type MarkConfigKeys = 'mark' | Mark['type'];
 
@@ -254,13 +259,20 @@ export interface MarkConfig {
 
   /**
    * The start angle in radians for arc marks.
+   * A value of `0` indicates up (north), increasing values proceed clockwise.
    */
   startAngle?: number | SignalRef;
 
   /**
-   * The start angle in radians for arc marks.
+   * The end angle in radians for arc marks.
+   * A value of `0` indicates up (north), increasing values proceed clockwise.
    */
   endAngle?: number | SignalRef;
+
+  /**
+   * The angular padding applied to sides of the arc, in radians.
+   */
+  padAngle?: number | SignalRef;
 
   /**
    * The inner radius in pixels of arc marks.
@@ -388,39 +400,39 @@ export interface MarkConfig {
   // ---------- Corner Radius: Bar, Tick, Rect ----------
 
   /**
-   * The radius in pixels of rounded rectangle or arc corners.
+   * The radius in pixels of rounded rectangles or arcs' corners.
    *
    * __Default value:__ `0`
    */
-  cornerRadius?: number;
+  cornerRadius?: number | SignalRef;
 
   /**
-   * The radius in pixels of rounded rectangle top right corner.
+   * The radius in pixels of rounded rectangles' top right corner.
    *
    * __Default value:__ `0`
    */
-  cornerRadiusTopLeft?: number;
+  cornerRadiusTopLeft?: number | SignalRef;
 
   /**
-   * The radius in pixels of rounded rectangle top left corner.
+   * The radius in pixels of rounded rectangles' top left corner.
    *
    * __Default value:__ `0`
    */
-  cornerRadiusTopRight?: number;
+  cornerRadiusTopRight?: number | SignalRef;
 
   /**
-   * The radius in pixels of rounded rectangle bottom right corner.
+   * The radius in pixels of rounded rectangles' bottom right corner.
    *
    * __Default value:__ `0`
    */
-  cornerRadiusBottomRight?: number;
+  cornerRadiusBottomRight?: number | SignalRef;
 
   /**
-   * The radius in pixels of rounded rectangle bottom left corner.
+   * The radius in pixels of rounded rectangles' bottom left corner.
    *
    * __Default value:__ `0`
    */
-  cornerRadiusBottomLeft?: number;
+  cornerRadiusBottomLeft?: number | SignalRef;
 }
 
 export type Cursor =
