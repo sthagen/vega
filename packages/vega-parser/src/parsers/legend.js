@@ -5,7 +5,7 @@ import {
 import legendGradient from './guides/legend-gradient';
 import legendGradientDiscrete from './guides/legend-gradient-discrete';
 import legendGradientLabels from './guides/legend-gradient-labels';
-import {default as legendSymbolGroups, legendSymbolLayout} from './guides/legend-symbol-groups';
+import legendSymbolGroups, {legendSymbolLayout} from './guides/legend-symbol-groups';
 import legendTitle from './guides/legend-title';
 import guideGroup from './guides/guide-group';
 import {getEncoding, getStyle, lookup} from './guides/guide-util';
@@ -27,11 +27,14 @@ export default function(spec, scope) {
       interactive = legendEncode.interactive,
       style = legendEncode.style,
       _ = lookup(spec, config),
+      scales = {}, scale = 0,
       entryEncode, entryLayout, params, children,
-      type, datum, dataRef, entryRef, group;
+      type, datum, dataRef, entryRef;
 
-  // resolve 'canonical' scale name
-  var scale = LegendScales.reduce(function(a, b) { return a || spec[b]; }, 0);
+  // resolve scales and 'canonical' scale name
+  LegendScales.forEach(s => spec[s]
+    ? (scales[s] = spec[s], scale = scale || spec[s]) : 0
+  );
   if (!scale) error('Missing valid scale for legend.');
 
   // resolve legend type (symbol, gradient, or discrete gradient)
@@ -40,6 +43,7 @@ export default function(spec, scope) {
   // single-element data source for legend group
   datum = {
     title:  spec.title != null,
+    scales: scales,
     type:   type,
     vgrad:  type !== 'symbol' &&  _.isVertical()
   };
@@ -47,7 +51,7 @@ export default function(spec, scope) {
 
   // encoding properties for legend group
   legendEncode = extendEncode(
-    buildLegendEncode(_, config), legendEncode, Skip
+    buildLegendEncode(_, spec, config), legendEncode, Skip
   );
 
   // encoding properties for legend entry sub-group
@@ -98,8 +102,14 @@ export default function(spec, scope) {
 
   // generate legend marks
   children = [
-    guideGroup(LegendEntryRole, null, null, dataRef, interactive,
-               entryEncode, children, entryLayout)
+    guideGroup({
+      role: LegendEntryRole,
+      from: dataRef,
+      encode: entryEncode,
+      marks: children,
+      layout: entryLayout,
+      interactive
+    })
   ];
 
   // include legend title if defined
@@ -107,12 +117,22 @@ export default function(spec, scope) {
     children.push(legendTitle(spec, config, encode.title, dataRef));
   }
 
-  // build legend specification
-  group = guideGroup(LegendRole, style, name, dataRef, interactive, legendEncode, children);
-  group.zindex = _('zindex');
-
   // parse legend specification
-  return parseMark(group, scope);
+  return parseMark(
+    guideGroup({
+      role:        LegendRole,
+      from:        dataRef,
+      encode:      legendEncode,
+      marks:       children,
+      aria:        _('aria'),
+      description: _('description'),
+      zindex:      _('zindex'),
+      name,
+      interactive,
+      style
+    }),
+    scope
+  );
 }
 
 function legendType(spec, scaleType) {
@@ -135,7 +155,7 @@ function scaleCount(spec) {
   }, 0);
 }
 
-function buildLegendEncode(_, config) {
+function buildLegendEncode(_, spec, config) {
   var encode = {enter: {}, update: {}};
 
   addEncoders(encode, {
@@ -150,6 +170,10 @@ function buildLegendEncode(_, config) {
     strokeDash:   config.strokeDash,
     x:            _('legendX'),
     y:            _('legendY'),
+
+    // accessibility support
+    format:       spec.format,
+    formatType:   spec.formatType,
   });
 
   return encode;

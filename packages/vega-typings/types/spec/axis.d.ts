@@ -18,6 +18,7 @@ import {
   FontWeightValue,
   NumberValue,
   StringValue,
+  StrokeCapValue,
   TextBaselineValue,
 } from './values';
 
@@ -107,14 +108,6 @@ export interface Axis extends BaseAxis {
   values?: any[] | SignalRef;
 
   /**
-   * The integer z-index indicating the layering of the axis group relative to other axis, mark, and legend groups.
-   *
-   * @TJS-type integer
-   * @minimum 0
-   */
-  zindex?: number;
-
-  /**
    * Mark definitions for custom axis encoding.
    */
   encode?: AxisEncode;
@@ -175,6 +168,22 @@ export interface BaseAxis {
    *  __Default value:__ `0.5`
    */
   bandPosition?: NumberValue;
+
+  // ---------- ARIA ----------
+  /**
+   * A boolean flag indicating if [ARIA attributes](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA) should be included (SVG output only).
+   * If `false`, the "aria-hidden" attribute will be set on the output SVG group, removing the axis from the ARIA accessibility tree.
+   *
+   * __Default value:__ `true`
+   */
+  aria?: boolean;
+
+  /**
+   * A text description of this axis for [ARIA accessibility](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA) (SVG output only).
+   * If the `aria` property is true, for SVG output the ["aria-label" attribute](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/ARIA_Techniques/Using_the_aria-label_attribute) will be set to this description.
+   * If the description is unspecified it will be automatically generated.
+   */
+  description?: string;
 
   // ---------- Title ----------
   /**
@@ -266,6 +275,13 @@ export interface BaseAxis {
   domain?: boolean;
 
   /**
+   * The stroke cap for the domain line's ending style. One of `"butt"`, `"round"` or `"square"`.
+   *
+   * __Default value:__ `"butt"`
+   */
+  domainCap?: StrokeCapValue;
+
+  /**
    * An array of alternating [stroke, space] lengths for dashed domain lines.
    */
   domainDash?: DashArrayValue;
@@ -306,6 +322,14 @@ export interface BaseAxis {
    * For band scales, indicates if ticks and grid lines should be placed at the `"center"` of a band (default) or at the band `"extent"`s to indicate intervals
    */
   tickBand?: 'center' | 'extent' | SignalRef;
+
+  /**
+   * The stroke cap for the tick lines' ending style. One of `"butt"`, `"round"` or `"square"`.
+   *
+   * __Default value:__ `"butt"`
+   */
+
+  tickCap?: StrokeCapValue;
 
   /**
    * The color of the axis's tick.
@@ -367,6 +391,13 @@ export interface BaseAxis {
    * A boolean flag indicating if grid lines should be included as part of the axis.
    */
   grid?: boolean;
+
+  /**
+   * The stroke cap for grid lines' ending style. One of `"butt"`, `"round"` or `"square"`.
+   *
+   * __Default value:__ `"butt"`
+   */
+  gridCap?: StrokeCapValue;
 
   /**
    * Color of gridlines.
@@ -516,6 +547,13 @@ export interface BaseAxis {
    *
    * __Default value:__ `2`
    */
-
   labelPadding?: NumberValue;
+
+  /**
+   * The integer z-index indicating the layering of the axis group relative to other axis, mark, and legend groups.
+   *
+   * @TJS-type integer
+   * @minimum 0
+   */
+  zindex?: number;
 }

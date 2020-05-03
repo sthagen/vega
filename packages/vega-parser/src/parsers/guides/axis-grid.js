@@ -22,6 +22,7 @@ export default function(spec, config, userEncode, dataRef, band) {
 
   addEncoders(encode, {
     stroke:           _('gridColor'),
+    strokeCap:        _('gridCap'),
     strokeDash:       _('gridDash'),
     strokeDashOffset: _('gridDashOffset'),
     strokeOpacity:    _('gridOpacity'),
@@ -58,7 +59,13 @@ export default function(spec, config, userEncode, dataRef, band) {
     update[v2] = enter[v2] = {signal: s, mult: sign, offset: offset};
   }
 
-  return guideMark(RuleMark, AxisGridRole, null, Value, dataRef, encode, userEncode);
+  return guideMark({
+    type: RuleMark,
+    role: AxisGridRole,
+    key:  Value,
+    from: dataRef,
+    encode
+   }, userEncode);
 }
 
 function offsetValue(offset, sign)  {

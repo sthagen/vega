@@ -1,16 +1,18 @@
 import Renderer from './Renderer';
 import {gradientRef, isGradient, patternPrefix} from './Gradient';
 import marks from './marks/index';
+import {ariaItemAttributes, ariaMarkAttributes} from './util/aria';
 import {cssClass, domChild, domClear, domCreate} from './util/dom';
 import {closeTag, openTag} from './util/tags';
 import {fontFamily, fontSize, lineHeight, textLines, textValue} from './util/text';
 import {visit} from './util/visit';
 import clip from './util/svg/clip';
 import metadata from './util/svg/metadata';
-import {styleProperties, styles} from './util/svg/styles';
+import {defaultCSS, styles} from './util/svg/styles';
 import {inherits, isArray} from 'vega-util';
 
-var ns = metadata.xmlns;
+const RootIndex = 1,
+      ns = metadata.xmlns;
 
 export default function SVGRenderer(loader) {
   Renderer.call(this, loader);
@@ -29,9 +31,16 @@ prototype.initialize = function(el, width, height, padding) {
     this._svg = domChild(el, 0, 'svg', ns);
     this._svg.setAttribute('class', 'marks');
     domClear(el, 1);
+
+    // set the svg default styles
+    const style = domChild(this._svg, 0, 'style');
+    style.textContent = defaultCSS;
+
     // set the svg root group
-    this._root = domChild(this._svg, 0, 'g', ns);
-    domClear(this._svg, 1);
+    this._root = domChild(this._svg, RootIndex, 'g', ns);
+
+    // ensure no additional child elements
+    domClear(this._svg, RootIndex + 1);
   }
 
   // create the svg definitions cache
@@ -92,7 +101,12 @@ prototype.svg = function() {
         style:  'fill: ' + this._bgcolor + ';'
       }) + closeTag('rect'));
 
-  return openTag('svg', attr) + bg + this._svg.innerHTML + closeTag('svg');
+  return openTag('svg', attr)
+    + openTag('style') + defaultCSS + closeTag('style')
+    + (this._defs.el ? this._defs.el.outerHTML : '')
+    + bg
+    + this._root.outerHTML
+    + closeTag('svg');
 };
 
 
@@ -123,12 +137,12 @@ prototype.updateDefs = function() {
       index = 0, id;
 
   for (id in defs.gradient) {
-    if (!el) defs.el = (el = domChild(svg, 0, 'defs', ns));
+    if (!el) defs.el = (el = domChild(svg, RootIndex, 'defs', ns));
     index = updateGradient(el, defs.gradient[id], index);
   }
 
   for (id in defs.clipping) {
-    if (!el) defs.el = (el = domChild(svg, 0, 'defs', ns));
+    if (!el) defs.el = (el = domChild(svg, RootIndex, 'defs', ns));
     index = updateClipping(el, defs.clipping[id], index);
   }
 
@@ -315,14 +329,16 @@ prototype.draw = function(el, scene, prev) {
 
   parent = bind(scene, el, prev, 'g', svg);
   parent.setAttribute('class', cssClass(scene));
+
+  // apply aria attributes to parent container element
+  const aria = ariaMarkAttributes(scene);
+  for (const key in aria) setAttribute(parent, key, aria[key]);
+
   if (!isGroup) {
     parent.style.setProperty('pointer-events', events);
   }
-  if (scene.clip) {
-    parent.setAttribute('clip-path', clip(renderer, scene, scene.group));
-  } else {
-    parent.removeAttribute('clip-path');
-  }
+  setAttribute(parent, 'clip-path', scene.clip
+    ? clip(renderer, scene, scene.group) : null);
 
   function process(item) {
     var dirty = renderer.isDirty(item),
@@ -456,7 +472,6 @@ var mark_extras = {
     } else {
       // ensure foreground is ignored
       fg.style.setProperty('display', 'none');
-      fg.style.setProperty('fill', 'none');
     }
   },
   image: function(mdef, el, item) {
@@ -526,6 +541,9 @@ prototype._update = function(mdef, el, item) {
   element = el;
   values = el.__values__;
 
+  // apply aria-specific properties
+  ariaItemAttributes(emit, item);
+
   // apply svg attributes
   mdef.attr(emit, item, this);
 
@@ -542,47 +560,47 @@ function emit(name, value, ns) {
   // early exit if value is unchanged
   if (value === values[name]) return;
 
-  if (value != null) {
-    // if value is provided, update DOM attribute
-    if (ns) {
-      element.setAttributeNS(ns, name, value);
-    } else {
-      element.setAttribute(name, value);
-    }
+  // use appropriate method given namespace (ns)
+  if (ns) {
+    setAttributeNS(element, name, value, ns);
   } else {
-    // else remove DOM attribute
-    if (ns) {
-      element.removeAttributeNS(ns, name);
-    } else {
-      element.removeAttribute(name);
-    }
+    setAttribute(element, name, value);
   }
 
   // note current value for future comparison
   values[name] = value;
 }
 
+function setAttribute(el, name, value) {
+  if (value != null) {
+    // if value is provided, update DOM attribute
+    el.setAttribute(name, value);
+  } else {
+    // else remove DOM attribute
+    el.removeAttribute(name);
+  }
+}
+
+function setAttributeNS(el, name, value, ns) {
+  if (value != null) {
+    // if value is provided, update DOM attribute
+    el.setAttributeNS(ns, name, value);
+  } else {
+    // else remove DOM attribute
+    el.removeAttributeNS(ns, name);
+  }
+}
+
 prototype.style = function(el, o) {
   if (o == null) return;
-  var i, n, prop, name, value;
 
-  for (i=0, n=styleProperties.length; i<n; ++i) {
-    prop = styleProperties[i];
-    value = o[prop];
-
-    if (prop === 'font') {
-      value = fontFamily(o);
-    }
-
+  for (const prop in styles) {
+    let value = prop === 'font' ? fontFamily(o) : o[prop];
     if (value === values[prop]) continue;
 
-    name = styles[prop];
+    const name = styles[prop];
     if (value == null) {
-      if (name === 'fill') {
-        el.style.setProperty(name, 'none');
-      } else {
-        el.style.removeProperty(name);
-      }
+      el.style.removeProperty(name);
     } else {
       if (isGradient(value)) {
         value = gradientRef(value, this._defs.gradient, href());

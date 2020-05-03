@@ -1,15 +1,8 @@
-import {Discrete, Symbols} from './legend-types';
+import {DiscreteLegend, SymbolLegend} from './legend-types';
+import {Log, Quantile, Quantize, Threshold, Time, UTC} from './scales/types';
 import {tickFormat, tickValues} from './ticks';
 import {peek} from 'vega-util';
-import {
-  Log,
-  Quantile,
-  Quantize,
-  Threshold,
-  Time,
-  UTC,
-  tickFormat as spanFormat
-} from 'vega-scale';
+import {tickFormat as spanFormat} from 'd3-scale';
 
 const symbols = {
   [Quantile]:  'quantiles',
@@ -52,21 +45,19 @@ export function thresholdFormat(scale, specifier) {
     d = Math.min(d, _[i] - _[i-1]);
   }
 
-  // 3 ticks times 10 for increased resolution
+  // tickCount = 3 ticks times 10 for increased resolution
   return spanFormat(0, d, 3 * 10, specifier);
 }
 
 function thresholdValues(thresholds) {
   const values = [-Infinity].concat(thresholds);
   values.max = +Infinity;
-
   return values;
 }
 
 function binValues(bins) {
   const values = bins.slice(0, -1);
   values.max = peek(bins);
-
   return values;
 }
 
@@ -79,13 +70,13 @@ export function labelFormat(scale, count, type, specifier, formatType, noSkip) {
     ? thresholdFormat(scale, specifier)
     : tickFormat(scale, count, specifier, formatType, noSkip);
 
-  return type === Symbols && isDiscreteRange(scale) ? formatRange(format)
-    : type === Discrete ? formatDiscrete(format)
+  return type === SymbolLegend && isDiscreteRange(scale) ? formatRange(format)
+    : type === DiscreteLegend ? formatDiscrete(format)
     : formatPoint(format);
 }
 
 function formatRange(format) {
-  return function(value, index, array) {
+  return (value, index, array) => {
     var limit = get(array[index + 1], get(array.max, +Infinity)),
         lo = formatValue(value, format),
         hi = formatValue(limit, format);
@@ -98,15 +89,11 @@ function get(value, dflt) {
 }
 
 function formatDiscrete(format) {
-  return function(value, index) {
-    return index ? format(value) : null;
-  };
+  return (value, index) => index ? format(value) : null;
 }
 
 function formatPoint(format) {
-  return function(value) {
-    return format(value);
-  };
+  return value => format(value);
 }
 
 function formatValue(value, format) {
@@ -121,13 +108,11 @@ export function labelFraction(scale) {
       span = hi - lo;
 
   if (scale.type === Threshold) {
-    var adjust = count ? span / count : 0.1;
+    const adjust = count ? span / count : 0.1;
     lo -= adjust;
     hi += adjust;
     span = hi - lo;
   }
 
-  return function(value) {
-    return (value - lo) / span;
-  };
+  return value => (value - lo) / span;
 }

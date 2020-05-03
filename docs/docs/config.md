@@ -197,12 +197,14 @@ Additional property blocks can target more specific axis types based on the orie
 | :-------------- | :-----------------------------: | :------------- |
 | bandPosition    | {% include type t="Number" %}   | An interpolation fraction indicating where, for `band` scales, axis ticks should be positioned. A value of `0` places ticks at the left edge of their bands. A value of `0.5` places ticks in the middle of their bands. |
 | domain          | {% include type t="Boolean" %}  | Boolean flag indicating if axis domain line should be included by default. |
+| domainCap       | {% include type t="String" %}   | The stroke cap for the axis domain line. One of `"butt"` (default), `"round"` or `"square"`. {% include tag ver="5.11" %} |
 | domainColor     | {% include type t="Color" %}    | Color of axis domain line. |
 | domainDash      | {% include type t="Number[]" %} | Stroke dash of axis domain lines (or `[]` for solid lines). {% include tag ver="5.0" %} |
 | domainDashOffset| {% include type t="Number" %}   | The pixel offset at which to start the domain dash array. {% include tag ver="5.0" %} |
 | domainOpacity   | {% include type t="Number" %}   | Opacity of axis domain line. {% include tag ver="4.1" %} |
 | domainWidth     | {% include type t="Number" %}   | Stroke width of axis domain line. |
 | grid            | {% include type t="Boolean" %}  | Boolean flag indicating if axis grid lines should be included by default. |
+| gridCap         | {% include type t="String" %}   | The stroke cap for axis grid lines. One of `"butt"` (default), `"round"` or `"square"`. {% include tag ver="5.11" %} |
 | gridColor       | {% include type t="Color" %}    | Color of axis grid lines. |
 | gridDash        | {% include type t="Number[]" %} | Stroke dash of axis grid lines (or `[]` for solid lines). |
 | gridDashOffset  | {% include type t="Number" %}   | The pixel offset at which to start the grid dash array. {% include tag ver="5.0" %} |
@@ -231,6 +233,7 @@ Additional property blocks can target more specific axis types based on the orie
 | minExtent       | {% include type t="Number" %}   | The minimum extent in pixels that axis ticks and labels should use. This determines a minimum offset value for axis titles. |
 | ticks           | {% include type t="Boolean" %}  | Boolean flag indicating if axis tick marks should be included by default. |
 | tickBand        | {% include type t="String" %}   | Indicates the type of tick style to use in conjunction with band scales. One of `"center"` (default) to center ticks in the middle of the band interval, or `"extent"` to place ticks at band extents (interval boundaries). If specified, this property may override the settings of `bandPosition`, `tickExtra`, and `tickOffset`. {% include tag ver="5.8" %} |
+| tickCap         | {% include type t="String" %}   | The stroke cap for axis tick marks. One of `"butt"` (default), `"round"` or `"square"`. {% include tag ver="5.11" %} |
 | tickColor       | {% include type t="Color" %}    | Color of axis ticks. |
 | tickDash        | {% include type t="Number[]" %} | Stroke dash of axis tick marks (or `[]` for solid lines). {% include tag ver="5.0" %} |
 | tickDashOffset  | {% include type t="Number" %}   | The pixel offset at which to start the tick mark dash array. {% include tag ver="5.0" %} |
@@ -256,6 +259,16 @@ Additional property blocks can target more specific axis types based on the orie
 | titleX          | {% include type t="Number" %}   | X-coordinate of the axis title relative to the axis group. |
 | titleY          | {% include type t="Number" %}   | Y-coordinate of the axis title relative to the axis group. |
 | translate       | {% include type t="Number" %}   | Coordinate space translation offset for axis layout. By default, axes are translated by a 0.5 pixel offset for both the x and y coordinates, in order to align stroked lines with the pixel grid. However, for vector graphics output these pixel-specific adjustments may be undesirable, in which case `translate` can be changed (for example, to zero). {% include tag ver="5.8" %} |
+| zindex          | {% include type t="Number" %}   | The integer z-index indicating the layering of the axis group relative to other axis, mark, and legend groups. With a value of `0` axes and grid lines are drawn _behind_ any marks defined in the same specification level. Higher values (`1`) cause axes and grid lines to be drawn on top of marks. {% include tag ver="5.11" %} |
+
+### <a name="axes-accessibility"></a>Axis Accessibility Properties
+
+Accessibility properties are used to determine [ARIA (Accessible Rich Internet Applications) attributes](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA) when using Vega to render SVG output.
+
+| Property              | Type                            | Description    |
+| :-------------------- | :-----------------------------: | :------------- |
+| aria                  | {% include type t="Boolean" %}  | A boolean flag (default `true`) indicating if ARIA attributes should be included (SVG output only). If `false`, the "aria-hidden" attribute will be set on the output SVG group, removing the axis from the ARIA accessibility tree. {% include tag ver="5.11" %}|
+| description           | {% include type t="String" %}   | A text description of this axis for ARIA accessibility (SVG output only). If the *aria* property is `true`, for SVG output the ["aria-label" attribute](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/ARIA_Techniques/Using_the_aria-label_attribute) will be set to this description. If the description is unspecified it will be automatically generated. {% include tag ver="5.11" %}|
 
 ### Usage
 
@@ -346,6 +359,16 @@ Properties defining default settings for legends. These properties are defined u
 | titleOpacity          | {% include type t="Number" %}   | Opacity of legend titles. {% include tag ver="4.1" %} |
 | titleOrient           | {% include type t="String" %}  | The orientation of title legends, determining where they are placed relative to legend contents. One of `"top"` (default), `"left"`, `"bottom"`, or `"right"`. {% include tag ver="5.0" %} |
 | titlePadding          | {% include type t="Number" %}   | Padding in pixels between the legend title and entries. |
+| zindex                | {% include type t="Number" %}   | The integer z-index indicating the layering of the legend group relative to other axis, mark, and legend groups. {% include tag ver="5.11" %} |
+
+### <a name="legends-accessibility"></a>Legend Accessibility Properties
+
+Accessibility properties are used to determine [ARIA (Accessible Rich Internet Applications) attributes](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA) when using Vega to render SVG output.
+
+| Property              | Type                            | Description    |
+| :-------------------- | :-----------------------------: | :------------- |
+| aria                  | {% include type t="Boolean" %}  | A boolean flag (default `true`) indicating if ARIA attributes should be included (SVG output only). If `false`, the "aria-hidden" attribute will be set on the output SVG group, removing the legend from the ARIA accessibility tree. {% include tag ver="5.11" %}|
+| description           | {% include type t="String" %}   | A text description of this legend for ARIA accessibility (SVG output only). If the *aria* property is `true`, for SVG output the ["aria-label" attribute](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/ARIA_Techniques/Using_the_aria-label_attribute) will be set to this description. If the description is unspecified it will be automatically generated. {% include tag ver="5.11" %}|
 
 ### <a name="legends-layout"></a>Legend Layout Properties {% include tag ver="5.0" %}
 
@@ -426,7 +449,16 @@ Properties defining default settings for titles. These properties are defined un
 | subtitleFontStyle     | {% include type t="String" %}   | Font style of the subtitle text (e.g., `normal` or `italic`). {% include tag ver="5.7" %} |
 | subtitleFontWeight    | {% include type t="String|Number" %}   | Font weight for subtitle text. {% include tag ver="5.7" %} |
 | subtitleLineHeight    | {% include type t="Number" %}   | Line height in pixels for multi-line subtitle text. {% include tag ver="5.7" %} |
-| subtitlePadding       | {% include type t="Number" %}   | Padding in pixels between title and subtitle text. {% include tag ver="5.7" %}|
+| subtitlePadding       | {% include type t="Number" %}   | Padding in pixels between title and subtitle text. {% include tag ver="5.7" %} |
+| zindex                | {% include type t="Number" %}   | The integer z-index indicating the layering of the title group relative to other axis, mark, and legend groups. {% include tag ver="5.11" %} |
+
+### <a name="title-accessibility"></a>Title Accessibility Properties
+
+Accessibility properties are used to determine [ARIA (Accessible Rich Internet Applications) attributes](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA) when using Vega to render SVG output.
+
+| Property              | Type                            | Description    |
+| :-------------------- | :-----------------------------: | :------------- |
+| aria                  | {% include type t="Boolean" %}  | A boolean flag (default `true`) indicating if ARIA attributes should be included (SVG output only). If `false`, the "aria-hidden" attribute will be set on the output SVG group, removing the title from the ARIA accessibility tree. {% include tag ver="5.11" %}|
 
 ### Usage
 

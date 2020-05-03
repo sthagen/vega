@@ -1,4 +1,5 @@
-import {Time, UTC, isLogarithmic} from 'vega-scale';
+import {isLogarithmic} from './scales';
+import {Time, UTC} from './scales/types';
 import {timeFormat, timeInterval, utcFormat, utcInterval} from 'vega-time';
 import {error, isArray, isNumber, isObject, isString, peek, span} from 'vega-util';
 import {formatSpecifier, format as numberFormat} from 'd3-format';
@@ -22,7 +23,10 @@ export function tickCount(scale, count, minStep) {
       count = Math.max(count, scale.bins.length);
     }
     if (minStep != null) {
-      count = Math.min(count, ~~(span(scale.domain()) / minStep) || 1);
+      count = Math.min(
+        count,
+        Math.floor((span(scale.domain()) / minStep) || 1)
+      );
     }
   }
 
@@ -150,7 +154,7 @@ function variablePrecision(specifier) {
 }
 
 function trimZeroes(format, decimalChar) {
-  return function(x) {
+  return x => {
     var str = format(x),
         dec = str.indexOf(decimalChar),
         idx, end;

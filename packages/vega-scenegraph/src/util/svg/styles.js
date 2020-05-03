@@ -1,4 +1,4 @@
-export var styles = {
+export const styles = {
   'fill':             'fill',
   'fillOpacity':      'fill-opacity',
   'stroke':           'stroke',
@@ -13,4 +13,5 @@ export var styles = {
   'blend':            'mix-blend-mode'
 };
 
-export var styleProperties = Object.keys(styles);
+// ensure miter limit default is consistent with canvas (#2498)
+export const defaultCSS = '* { fill: none } path { stroke-miterlimit: 10; }';

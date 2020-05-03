@@ -1,6 +1,6 @@
-import { StrokeCap, StrokeJoin, Cursor } from './config.d';
 import { SignalRef } from '.';
 import { Color } from './color';
+import { Cursor, StrokeCap, StrokeJoin } from './config.d';
 import { TitleAnchor } from './title';
 
 export type Field = string | SignalRef | DatumFieldRef | GroupFieldRef | ParentFieldRef;
@@ -60,6 +60,8 @@ export type SymbolShapeValueRef = ScaledValueRef<SymbolShape>;
 export type FontWeightValueRef = ScaledValueRef<FontWeight>;
 export type FontStyleValueRef = ScaledValueRef<FontStyle>;
 export type AlignValueRef = ScaledValueRef<Align>;
+
+export type StrokeCapValueRef = ScaledValueRef<StrokeCap>;
 export type AnchorValueRef = ScaledValueRef<TitleAnchor>;
 export type OrientValueRef = ScaledValueRef<Orient>;
 export type TextBaselineValueRef = ScaledValueRef<TextBaseline>;
@@ -254,6 +256,28 @@ export interface EncodeEntry {
   cursor?: ProductionRule<ScaledValueRef<Cursor>>;
   tooltip?: ProductionRule<StringValueRef>;
   zindex?: ProductionRule<NumericValueRef>;
+  /**
+   * A boolean flag indicating if [ARIA attributes](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA) should be included (SVG output only).
+   * If `false`, the "aria-hidden" attribute will be set on the output SVG element, removing the mark item from the ARIA accessibility tree.
+   */
+  aria?: ProductionRule<BooleanValueRef>;
+  /**
+   * Sets the type of user interface element of the mark item for [ARIA accessibility](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA) (SVG output only).
+   * If specified, this property determines the "role" attribute.
+   * Warning: this property is experimental and may be changed in the future.
+   */
+  ariaRole?: ProductionRule<StringValueRef>;
+  /**
+   * A human-readable, author-localized description for the role of the mark item for [ARIA accessibility](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA) (SVG output only).
+   * If specified, this property determines the "aria-roledescription" attribute.
+   * Warning: this property is experimental and may be changed in the future.
+   */
+  ariaRoleDescription?: ProductionRule<StringValueRef>;
+  /**
+   * A text description of the mark item for [ARIA accessibility](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA) (SVG output only).
+   * If specified, this property determines the ["aria-label" attribute](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/ARIA_Techniques/Using_the_aria-label_attribute).
+   */
+  description?: ProductionRule<StringValueRef>;
   [k: string]: ProductionRule<ArbitraryValueRef> | undefined;
 }
 

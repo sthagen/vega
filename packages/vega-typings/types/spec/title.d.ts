@@ -3,6 +3,7 @@ import { Encode, Text } from './encode';
 import {
   AlignValue,
   AnchorValue,
+  BooleanValue,
   ColorValue,
   FontStyleValue,
   FontWeightValue,
@@ -42,16 +43,6 @@ export interface Title extends BaseTitle {
   style?: string | string[];
 
   /**
-   * 	The integer z-index indicating the layering of the title group relative to other axis, mark, and legend groups.
-   *
-   * __Default value:__ `0`.
-   *
-   * @TJS-type integer
-   * @minimum 0
-   */
-  zindex?: number;
-
-  /**
    * Mark definitions for custom title encoding.
    */
   encode?: TitleEncode | Encode<TextEncodeEntry>; // second entry is **deprecated**
@@ -89,6 +80,21 @@ export interface BaseTitle {
   offset?: NumberValue;
 
   /**
+   * Default title orientation (`"top"`, `"bottom"`, `"left"`, or `"right"`)
+   */
+  orient?: TitleOrient | SignalRef;
+
+  // ---------- ARIA ----------
+  /**
+   * A boolean flag indicating if [ARIA attributes](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA) should be included (SVG output only).
+   * If `false`, the "aria-hidden" attribute will be set on the output SVG group, removing the title from the ARIA accessibility tree.
+   *
+   * __Default value:__ `true`
+   */
+  aria?: boolean;
+
+  // ---------- Shared Text Properties ----------
+  /**
    * Horizontal text alignment for title text. One of `"left"`, `"center"`, or `"right"`.
    */
   align?: AlignValue;
@@ -113,6 +119,14 @@ export interface BaseTitle {
    */
   dy?: NumberValue;
 
+  /**
+   * The maximum allowed length in pixels of title and subtitle text.
+   *
+   * @minimum 0
+   */
+  limit?: NumberValue;
+
+  // ---------- Title Text ----------
   /**
    * Text color for title text.
    */
@@ -146,18 +160,7 @@ export interface BaseTitle {
    */
   lineHeight?: NumberValue;
 
-  /**
-   * The maximum allowed length in pixels of title and subtitle text.
-   *
-   * @minimum 0
-   */
-  limit?: NumberValue;
-
-  /**
-   * Default title orientation (`"top"`, `"bottom"`, `"left"`, or `"right"`)
-   */
-  orient?: TitleOrient | SignalRef;
-
+  // ---------- Subtitle Text ----------
   /**
    * Text color for subtitle text.
    */
@@ -195,4 +198,14 @@ export interface BaseTitle {
    * The padding in pixels between title and subtitle text.
    */
   subtitlePadding?: NumberValue;
+
+  /**
+   * 	The integer z-index indicating the layering of the title group relative to other axis, mark, and legend groups.
+   *
+   * __Default value:__ `0`.
+   *
+   * @TJS-type integer
+   * @minimum 0
+   */
+  zindex?: number;
 }
