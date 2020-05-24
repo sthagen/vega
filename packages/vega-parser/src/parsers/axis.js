@@ -1,17 +1,17 @@
+import {addEncoders, extendEncode} from './encode/util';
 import axisConfig from './guides/axis-config';
 import axisDomain from './guides/axis-domain';
 import axisGrid from './guides/axis-grid';
 import axisTicks from './guides/axis-ticks';
 import axisLabels from './guides/axis-labels';
 import axisTitle from './guides/axis-title';
+import {Skip} from './guides/constants';
 import guideGroup from './guides/guide-group';
 import {lookup, tickBand} from './guides/guide-util';
 import {AxisRole} from './marks/roles';
 import parseMark from './mark';
-import {addEncoders, extendEncode} from './encode/encode-util';
-import {Skip} from './guides/constants';
-import {ref, value} from '../util';
 import {AxisTicks, Collect} from '../transforms';
+import {ref, value} from '../util';
 
 export default function(spec, scope) {
   var config = axisConfig(spec, scope),
@@ -26,13 +26,12 @@ export default function(spec, scope) {
 
   // single-element data source for axis group
   datum = {
-    orient: spec.orient,
     scale:  spec.scale,
     ticks:  !!_('ticks'),
     labels: !!_('labels'),
     grid:   !!_('grid'),
     domain: !!_('domain'),
-    title:  spec.title != null,
+    title:  spec.title != null
   };
   dataRef = ref(scope.add(Collect({}, [datum])));
 
@@ -104,6 +103,7 @@ function buildAxisEncode(_, spec) {
   var encode = {enter: {}, update: {}};
 
   addEncoders(encode, {
+    orient:       _('orient'),
     offset:       _('offset') || 0,
     position:     value(spec.position, 0),
     titlePadding: _('titlePadding'),
@@ -114,7 +114,7 @@ function buildAxisEncode(_, spec) {
 
     // accessibility support
     format:       spec.format,
-    formatType:   spec.formatType,
+    formatType:   spec.formatType
   });
 
   return encode;
