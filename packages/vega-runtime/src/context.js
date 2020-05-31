@@ -1,5 +1,5 @@
 import parse from './dataflow';
-import parseExpressions from './expression';
+import expressionCodegen from './expression';
 import {
   parseOperator,
   parseOperatorParameters
@@ -10,21 +10,21 @@ import parseUpdate from './update';
 
 import {getState, setState} from './state';
 import {canonicalType, isCollect} from './util';
-import {extend} from 'vega-util';
 
 /**
  * Context objects store the current parse state.
  * Enables lookup of parsed operators, event streams, accessors, etc.
  * Provides a 'fork' method for creating child contexts for subflows.
  */
-export default function(df, transforms, functions) {
-  return new Context(df, transforms, functions);
+export default function(df, transforms, functions, expr) {
+  return new Context(df, transforms, functions, expr);
 }
 
-function Context(df, transforms, functions) {
+function Context(df, transforms, functions, expr) {
   this.dataflow = df;
   this.transforms = transforms;
   this.events = df.events.bind(df);
+  this.expr = expr || expressionCodegen,
   this.signals = {};
   this.scales = {};
   this.nodes = {};
@@ -39,8 +39,8 @@ function Context(df, transforms, functions) {
 function Subcontext(ctx) {
   this.dataflow = ctx.dataflow;
   this.transforms = ctx.transforms;
-  this.functions = ctx.functions;
   this.events = ctx.events;
+  this.expr = ctx.expr;
   this.signals = Object.create(ctx.signals);
   this.scales = Object.create(ctx.scales);
   this.nodes = Object.create(ctx.nodes);
@@ -54,9 +54,19 @@ function Subcontext(ctx) {
 
 Context.prototype = Subcontext.prototype = {
   fork() {
-    var ctx = new Subcontext(this);
+    const ctx = new Subcontext(this);
     (this.subcontext || (this.subcontext = [])).push(ctx);
     return ctx;
+  },
+  detach(ctx) {
+    this.subcontext = this.subcontext.filter(c => c !== ctx);
+
+    // disconnect all nodes in the subcontext
+    // wipe out targets first for better efficiency
+    const keys = Object.keys(ctx.nodes);
+    for (const key of keys) ctx.nodes[key]._targets = null;
+    for (const key of keys) ctx.nodes[key].detach();
+    ctx.nodes = null;
   },
   get(id) {
     return this.nodes[id];
@@ -132,6 +142,23 @@ Context.prototype = Subcontext.prototype = {
     this.dataflow.on(stream, target, update, params, spec.options);
   },
 
+  // expression parsing
+  operatorExpression(expr) {
+    return this.expr.operator(this, expr);
+  },
+  parameterExpression(expr) {
+    return this.expr.parameter(this, expr);
+  },
+  eventExpression(expr) {
+    return this.expr.event(this, expr);
+  },
+  handlerExpression(expr) {
+    return this.expr.handler(this, expr);
+  },
+  encodeExpression(encode) {
+    return this.expr.encode(this, encode);
+  },
+
   // parse methods
   parse,
   parseOperator,
@@ -144,6 +171,3 @@ Context.prototype = Subcontext.prototype = {
   getState,
   setState
 };
-
-// expression parsing methods
-extend(Context.prototype, parseExpressions);
