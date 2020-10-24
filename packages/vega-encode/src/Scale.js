@@ -126,7 +126,7 @@ function isContinuousColor(_) {
 
 function configureDomain(scale, _, df) {
   // check raw domain, if provided use that and exit early
-  var raw = rawDomain(scale, _.domainRaw, df);
+  const raw = rawDomain(scale, _.domainRaw, df);
   if (raw > -1) return raw;
 
   var domain = _.domain,
@@ -205,9 +205,7 @@ function domainCheck(type, domain, df) {
   if (isLogarithmic(type)) {
     // sum signs of domain values
     // if all pos or all neg, abs(sum) === domain.length
-    var s = Math.abs(domain.reduce(function(s, v) {
-      return s + (v < 0 ? -1 : v > 0 ? 1 : 0);
-    }, 0));
+    var s = Math.abs(domain.reduce((s, v) => s + (v < 0 ? -1 : v > 0 ? 1 : 0), 0));
 
     if (s !== domain.length) {
       df.warn('Log scale domain includes zero: ' + stringValue(domain));
@@ -221,12 +219,13 @@ function configureBins(scale, _, count) {
 
   if (bins && !isArray(bins)) {
     // generate bin boundary array
-    let domain = scale.domain(),
-        lo = domain[0],
-        hi = peek(domain),
-        start = bins.start == null ? lo : bins.start,
-        stop = bins.stop == null ? hi : bins.stop,
-        step = bins.step;
+    const domain = scale.domain(),
+          lo = domain[0],
+          hi = peek(domain),
+          step = bins.step;
+
+    let start = bins.start == null ? lo : bins.start,
+        stop = bins.stop == null ? hi : bins.stop;
 
     if (!step) error('Scale bins parameter missing step property.');
     if (start < lo) start = step * Math.ceil(lo / step);

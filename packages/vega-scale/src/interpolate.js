@@ -29,7 +29,8 @@ export function scaleCopy(scale) {
 }
 
 export function scaleFraction(scale, min, max) {
-  let delta = max - min, i, t, s;
+  const delta = max - min;
+  let i, t, s;
 
   if (!delta || !Number.isFinite(delta)) {
     return constant(0.5);
@@ -52,6 +53,6 @@ export function interpolate(type, gamma) {
 function method(type) {
   return 'interpolate' + type.toLowerCase()
     .split('-')
-    .map(function(s) { return s[0].toUpperCase() + s.slice(1); })
+    .map(s => s[0].toUpperCase() + s.slice(1))
     .join('');
 }

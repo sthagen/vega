@@ -1,9 +1,9 @@
 var tape = require('tape'),
     quartiles = require('../').quartiles;
 
-tape('quartiles calculates quartile values', function(t) {
+tape('quartiles calculates quartile values', t => {
   // unsorted
-  var a = [9, 7, 8, 1, 2, 3, 4, 5, 6];
+  const a = [9, 7, 8, 1, 2, 3, 4, 5, 6];
 
   // with number array
   t.deepEqual([3, 5, 7], quartiles(a));
@@ -14,9 +14,9 @@ tape('quartiles calculates quartile values', function(t) {
   t.end();
 });
 
-tape('quartiles ignores invalid values', function(t) {
+tape('quartiles ignores invalid values', t => {
   // unsorted
-  var a = [9, 7, null, 8, 1, NaN, 2, 3, undefined, 4, 5, '', 6];
+  const a = [9, 7, null, 8, 1, NaN, 2, 3, undefined, 4, 5, '', 6];
 
   // with number array
   t.deepEqual([3, 5, 7], quartiles(a));

@@ -5,8 +5,8 @@ var tape = require('tape'),
 
 util.extend(vega.transforms, require('vega-transforms'));
 
-tape('Parser parses Vega specs with data transforms', function(t) {
-  var spec = {
+tape('Parser parses Vega specs with data transforms', t => {
+  const spec = {
     'signals': [
       { 'name': 'ufield', 'value': 'u' },
       { 'name': 'fields', 'value': ['u', 'v'] }
@@ -45,7 +45,7 @@ tape('Parser parses Vega specs with data transforms', function(t) {
     ]
   };
 
-  var dfs = parse(spec);
+  const dfs = parse(spec);
 
   t.equal(dfs.operators.length, 33);
 

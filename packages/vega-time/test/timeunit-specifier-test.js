@@ -1,7 +1,7 @@
 var tape = require('tape'),
     vega = require('../');
 
-tape('timeUnitSpecifier produces specifier for single time units', function(t) {
+tape('timeUnitSpecifier produces specifier for single time units', t => {
   t.equal(vega.timeUnitSpecifier('year'), '%Y');
   t.equal(vega.timeUnitSpecifier('quarter'), 'Q%q');
   t.equal(vega.timeUnitSpecifier('month'), '%b');
@@ -16,7 +16,7 @@ tape('timeUnitSpecifier produces specifier for single time units', function(t) {
   t.end();
 });
 
-tape('timeUnitSpecifier produces specifier for multiple time units', function(t) {
+tape('timeUnitSpecifier produces specifier for multiple time units', t => {
   t.equal(vega.timeUnitSpecifier(['year', 'quarter']), '%Y Q%q');
   t.equal(vega.timeUnitSpecifier(['year', 'month']), '%Y-%m');
   t.equal(vega.timeUnitSpecifier(['year', 'month', 'date']), '%Y-%m-%d');
@@ -31,8 +31,8 @@ tape('timeUnitSpecifier produces specifier for multiple time units', function(t)
   t.end();
 });
 
-tape('timeUnitSpecifier supports configurable specifiers', function(t) {
-  var specs = {
+tape('timeUnitSpecifier supports configurable specifiers', t => {
+  const specs = {
     'year': '%y',
     'month': 'M%m',
     'year-month': '%y-%b',

@@ -59,7 +59,7 @@ function materialize(data, filter) {
 
 function filter(pulse, flags) {
   const map = {};
-  pulse.visit(flags, function(t) { map[tupleid(t)] = 1; });
+  pulse.visit(flags, t => { map[tupleid(t)] = 1; });
   return t => map[tupleid(t)] ? null : t;
 }
 
@@ -173,11 +173,16 @@ Pulse.prototype = {
    */
   addAll() {
     let p = this;
-    if (!p.source || p.source.length === p.add.length) {
+    const reuse = !p.source
+      || p.add === p.rem // special case for indexed set (e.g., crossfilter)
+      || (!p.rem.length && p.source.length === p.add.length);
+
+    if (reuse) {
       return p;
     } else {
       p = new Pulse(this.dataflow).init(this);
       p.add = p.source;
+      p.rem = []; // new operators can ignore rem #2769
       return p;
     }
   },
@@ -389,7 +394,7 @@ Pulse.prototype = {
    * @return {Pulse} - Returns this pulse instance.
    */
   visit(flags, visitor) {
-    let p = this, v = visitor, src, sum;
+    const p = this, v = visitor;
 
     if (flags & SOURCE) {
       visitArray(p.source, p.srcF, v);
@@ -400,8 +405,9 @@ Pulse.prototype = {
     if (flags & REM) visitArray(p.rem, p.remF, v);
     if (flags & MOD) visitArray(p.mod, p.modF, v);
 
-    if ((flags & REFLOW) && (src = p.source)) {
-      sum = p.add.length + p.mod.length;
+    const src = p.source;
+    if ((flags & REFLOW) && src) {
+      const sum = p.add.length + p.mod.length;
       if (sum === src.length) {
         // do nothing
       } else if (sum) {

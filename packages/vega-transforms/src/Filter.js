@@ -22,17 +22,17 @@ Filter.Definition = {
 
 inherits(Filter, Transform, {
   transform(_, pulse) {
-    let df = pulse.dataflow,
-        cache = this.value, // cache ids of filtered tuples
-        output = pulse.fork(),
-        add = output.add,
-        rem = output.rem,
-        mod = output.mod,
-        test = _.expr,
-        isMod = true;
+    const df = pulse.dataflow,
+          cache = this.value, // cache ids of filtered tuples
+          output = pulse.fork(),
+          add = output.add,
+          rem = output.rem,
+          mod = output.mod,
+          test = _.expr;
+    let isMod = true;
 
     pulse.visit(pulse.REM, t => {
-      var id = tupleid(t);
+      const id = tupleid(t);
       if (!cache.has(id)) rem.push(t);
       else cache.delete(id);
     });

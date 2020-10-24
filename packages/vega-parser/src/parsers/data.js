@@ -14,7 +14,7 @@ export default function parseData(data, scope) {
   }
 
   if (data.on) {
-    data.on.forEach(function(on) {
+    data.on.forEach(on => {
       parseTrigger(on, scope, data.name);
     });
   }
@@ -26,8 +26,8 @@ export default function parseData(data, scope) {
  * Analyze a data pipeline, add needed operators.
  */
 function analyze(data, scope, ops) {
-  let output = [],
-      source = null,
+  const output = [];
+  let source = null,
       modify = false,
       generate = false,
       upstream, i, n, t, m;

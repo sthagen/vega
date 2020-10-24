@@ -9,7 +9,7 @@ function closeTo(t, a, b) {
   t.equal(a && a.toFixed(14), b && b.toFixed(14));
 }
 
-tape('Label performs label layout over input points', function(t) {
+tape('Label performs label layout over input points', t => {
   function data() {
     return [
       {text: 'foo', x: 20, y: 15, fontSize: 10},
@@ -31,7 +31,7 @@ tape('Label performs label layout over input points', function(t) {
     .pulse(c0, vega.changeset().insert(data()))
     .run();
   t.equal(lb.stamp, df.stamp());
-  var out = c0.value;
+  let out = c0.value;
   t.equal(out.length, data().length);
   closeTo(t, out[0].x, 18);
   closeTo(t, out[0].y, 15);
@@ -120,7 +120,7 @@ tape('Label performs label layout over input points', function(t) {
   t.end();
 });
 
-tape('Label performs label layout with base mark reactive geometry', function(t) {
+tape('Label performs label layout with base mark reactive geometry', t => {
   function data() {
     return [
       {
@@ -156,7 +156,7 @@ tape('Label performs label layout with base mark reactive geometry', function(t)
     .pulse(c0, vega.changeset().insert(data()))
     .run();
   t.equal(lb.stamp, df.stamp());
-  var out = c0.value;
+  let out = c0.value;
   t.equal(out.length, data().length);
   closeTo(t, out[0].x, 18);
   closeTo(t, out[0].y, 16);

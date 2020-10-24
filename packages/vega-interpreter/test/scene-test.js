@@ -1,15 +1,15 @@
-var OUTPUT_FAILURES = false, // flag to write scenes upon test failure
-    specdir = process.cwd() + '/../vega/test/specs-valid/',
-    testdir = process.cwd() + '/../vega/test/scenegraphs/',
-    fs = require('fs'),
-    tape = require('tape'),
-    vega = require('vega'),
-    interp = require('../'),
-    loader = vega.loader({baseURL: '../vega/test/'}),
-    specs = require('../../vega/test/specs-valid.json').filter(spec => {
-      // filter wordcloud due to cross-platform canvas issues
-      return spec !== 'wordcloud';
-    });
+const OUTPUT_FAILURES = false, // flag to write scenes upon test failure
+      specdir = process.cwd() + '/../vega/test/specs-valid/',
+      testdir = process.cwd() + '/../vega/test/scenegraphs/',
+      fs = require('fs'),
+      tape = require('tape'),
+      vega = require('vega'),
+      interp = require('../'),
+      loader = vega.loader({baseURL: '../vega/test/'}),
+      specs = require('../../vega/test/specs-valid.json').filter(spec => {
+        // filter wordcloud due to cross-platform canvas issues
+        return spec !== 'wordcloud';
+      });
 
 // Plug-in a seeded random number generator for testing.
 vega.setRandom(vega.randomLCG(123456789));
@@ -17,7 +17,7 @@ vega.setRandom(vega.randomLCG(123456789));
 // Standardize font metrics to suppress cross-platform variance.
 vega.textMetrics.canvas(false);
 
-tape('Vega generates scenegraphs for specifications', function(t) {
+tape('Vega generates scenegraphs for specifications', t => {
   let count = specs.length;
 
   specs.forEach(async function(name, index) {
@@ -40,7 +40,7 @@ tape('Vega generates scenegraphs for specifications', function(t) {
 
       if (OUTPUT_FAILURES && !isEqual) {
         pair.forEach((scene, i) => {
-          var prefix = vega.pad(index, 2, '0', 'left');
+          const prefix = vega.pad(index, 2, '0', 'left');
           fs.writeFileSync(
             `${prefix}-scene-${i?'expect':'actual'}-${name}.json`,
             JSON.stringify(scene, 0, 2)

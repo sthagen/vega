@@ -133,8 +133,9 @@ inherits(Aggregate, Transform, {
           inputMap = {};
 
     function inputVisit(get) {
-      let fields = array(accessorFields(get)),
-          i = 0, n = fields.length, f;
+      const fields = array(accessorFields(get)),
+            n = fields.length;
+      let i = 0, f;
       for (; i<n; ++i) {
         if (!inputMap[f=fields[i]]) {
           inputMap[f] = 1;
@@ -145,8 +146,8 @@ inherits(Aggregate, Transform, {
 
     // initialize group-by dimensions
     this._dims = array(_.groupby);
-    this._dnames = this._dims.map(function(d) {
-      var dname = accessorName(d);
+    this._dnames = this._dims.map(d => {
+      const dname = accessorName(d);
       inputVisit(d);
       outputs.push(dname);
       return dname;
@@ -158,12 +159,12 @@ inherits(Aggregate, Transform, {
     this._counts = [];
     this._measures = [];
 
-    let fields = _.fields || [null],
-        ops = _.ops || ['count'],
-        as = _.as || [],
-        n = fields.length,
-        map = {},
-        field, op, m, mname, outname, i;
+    const fields = _.fields || [null],
+          ops = _.ops || ['count'],
+          as = _.as || [],
+          n = fields.length,
+          map = {};
+    let field, op, m, mname, outname, i;
 
     if (n !== ops.length) {
       error('Unmatched number of fields and aggregate ops.');
@@ -197,9 +198,7 @@ inherits(Aggregate, Transform, {
       m.push(createMeasure(op, outname));
     }
 
-    this._measures = this._measures.map(function(m) {
-      return compileMeasures(m, m.field);
-    });
+    this._measures = this._measures.map(m => compileMeasures(m, m.field));
 
     return {}; // aggregation cells (this.value)
   },

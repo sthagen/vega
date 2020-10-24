@@ -1,6 +1,6 @@
 {
   "name": "vega-label",
-  "version": "0.0.3",
+  "version": "1.0.0",
   "description": "Label layout transform for Vega dataflows.",
   "keywords": [
     "vega",
@@ -13,23 +13,21 @@
     "Chanwut Kittivorawong"
   ],
   "main": "build/vega-label.js",
-  "module": "index",
+  "module": "build/vega-label.module.js",
+  "unpkg": "build/vega-label.min.js",
   "repository": "vega/vega",
   "scripts": {
-    "rollup": "rollup -g vega-canvas:vega,vega-dataflow:vega,vega-scenegraph:vega,vega-util:vega -f umd -n vega.transforms -o build/vega-label.js -- index.js",
-    "prebuild": "rimraf build && mkdir build",
-    "build": "yarn rollup",
-    "postbuild": "terser build/vega-label.js -c -m -o build/vega-label.min.js",
-    "pretest": "yarn prebuild && yarn rollup",
+    "prebuild": "rimraf build",
+    "build": "rollup -c --config-transform",
+    "pretest": "yarn build --config-test",
     "test": "tape 'test/**/*-test.js'",
-    "prepublishOnly": "yarn test && yarn build",
-    "postpublish": "git push && git push --tags"
+    "prepublishOnly": "yarn test && yarn build"
   },
   "dependencies": {
-    "vega-canvas": "^1.2.2",
-    "vega-dataflow": "^5.6.0",
-    "vega-scenegraph": "^4.8.0",
-    "vega-util": "^1.14.0"
+    "vega-canvas": "^1.2.5",
+    "vega-dataflow": "^5.7.3",
+    "vega-scenegraph": "^4.9.2",
+    "vega-util": "^1.15.2"
   },
   "devDependencies": {
     "vega-transforms": "*"

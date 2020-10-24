@@ -8,7 +8,7 @@ function toObject(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
-tape('Nest tuples', function(t) {
+tape('Nest tuples', t => {
   var dataA = {id: 'A', job: 'Doctor'},
       nodeA = {key: dataA.job, values: [dataA]},
       childA = {data: dataA, height: 0, depth: 2};
@@ -26,8 +26,8 @@ tape('Nest tuples', function(t) {
   // -- test adds
   df.pulse(collect, vega.changeset().insert([dataA, dataB])).run();
 
-  var expected = [dataA, dataB];
-  var expectedRoot = {
+  let expected = [dataA, dataB];
+  let expectedRoot = {
     data: {values: [nodeA, nodeB]},
     height: 2,
     depth: 0,
@@ -43,7 +43,7 @@ tape('Nest tuples', function(t) {
   };
 
   // test and remove circular properties first
-  var d = out.value;
+  let d = out.value;
   t.equal(d.root.children[0].parent, d.root);
   t.equal(d.root.children[1].parent, d.root);
   t.equal(d.root.lookup['1'].parent, d.root.children[0]);
@@ -84,7 +84,7 @@ tape('Nest tuples', function(t) {
   t.end();
 });
 
-tape('Nest empty data', function(t) {
+tape('Nest empty data', t => {
   // Setup nest aggregation
   var df = new vega.Dataflow(),
       collect = df.add(Collect),

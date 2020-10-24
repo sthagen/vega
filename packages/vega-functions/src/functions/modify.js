@@ -18,7 +18,7 @@ function equalArray(a, b) {
 }
 
 function equalObject(a, b) {
-  for (let key in a) {
+  for (const key in a) {
     if (!equal(a[key], b[key])) return false;
   }
   return true;
@@ -29,11 +29,12 @@ function removePredicate(props) {
 }
 
 export default function(name, insert, remove, toggle, modify, values) {
-  let df = this.context.dataflow,
-      data = this.context.data[name],
-      input = data.input,
-      changes = data.changes,
-      stamp = df.stamp(),
+  const df = this.context.dataflow,
+        data = this.context.data[name],
+        input = data.input,
+        stamp = df.stamp();
+
+  let changes = data.changes,
       predicate, key;
 
   if (df._trigger === false || !(input.value.length || insert || toggle)) {
@@ -44,7 +45,7 @@ export default function(name, insert, remove, toggle, modify, values) {
   if (!changes || changes.stamp < stamp) {
     data.changes = (changes = df.changeset());
     changes.stamp = stamp;
-    df.runAfter(function() {
+    df.runAfter(() => {
       data.modified = true;
       df.pulse(input, changes).run();
     }, true, 1);

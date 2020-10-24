@@ -6,23 +6,23 @@ var tape = require('tape'),
     Collect = tx.collect,
     Facet = tx.facet;
 
-tape('Facet facets tuples', function(t) {
-  var data = [
+tape('Facet facets tuples', t => {
+  const data = [
     {k:'a', v:5}, {k:'b', v:7}, {k:'c', v:9},
     {k:'a', v:1}, {k:'b', v:2}, {k:'c', v:3}
   ];
 
-  var subs = [];
+  const subs = [];
 
   function subflow(df, key) {
-    var col = df.add(Collect);
+    const col = df.add(Collect);
     subs.push({key: key, data: col});
     return col;
   }
 
   function subtest(len) {
     return function(s, i) {
-      var d = s.data.value;
+      const d = s.data.value;
       t.equal(d.length, len === undefined ? i + 1 : len);
       t.equal(d.every(t => t.k === s.key), true);
     };
@@ -111,23 +111,23 @@ tape('Facet facets tuples', function(t) {
   t.end();
 });
 
-tape('Facet handles key parameter change', function(t) {
-  var data = [
+tape('Facet handles key parameter change', t => {
+  const data = [
     {k1:'a', k2:'a', v:5}, {k1:'b', k2:'c', v:7}, {k1:'c', k2:'c', v:9},
     {k1:'a', k2:'a', v:1}, {k1:'b', k2:'b', v:2}, {k1:'c', k2:'b', v:3}
   ];
 
-  var subs = [];
+  const subs = [];
 
   function subflow(df, key) {
-    var col = df.add(Collect);
+    const col = df.add(Collect);
     subs.push({key: key, data: col});
     return col;
   }
 
   function subtest(len) {
     return function(s, i) {
-      var d = s.data.value;
+      const d = s.data.value;
       t.equal(d.length, len === undefined ? i + 1 : len);
       t.equal(d.every(t => t.k2 === s.key), true);
     };
@@ -151,7 +151,7 @@ tape('Facet handles key parameter change', function(t) {
   t.end();
 });
 
-tape('Facet key cache does not leak memory', function(t) {
+tape('Facet key cache does not leak memory', t => {
   var df = new vega.Dataflow(),
       c0 = df.add(Collect),
       ft = df.add(Facet, {subflow:subflow, key:field('key'), pulse:c0}),

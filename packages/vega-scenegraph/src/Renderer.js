@@ -93,7 +93,7 @@ Renderer.prototype = {
    * @return {Renderer} - This renderer instance.
    */
   render(scene) {
-    var r = this;
+    const r = this;
 
     // bind arguments into a render call, and cache it
     // this function may be subsequently called for async redraw
@@ -127,9 +127,9 @@ Renderer.prototype = {
    * @return {Promise} - A Promise that resolves when rendering is complete.
    */
   renderAsync(scene) {
-    var r = this.render(scene);
+    const r = this.render(scene);
     return this._ready
-      ? this._ready.then(function() { return r; })
+      ? this._ready.then(() => r)
       : Promise.resolve(r);
   },
 
@@ -147,9 +147,9 @@ Renderer.prototype = {
 
     if (!r._ready) {
       // re-render the scene when loading completes
-      var call = r._call;
+      const call = r._call;
       r._ready = r._loader.ready()
-        .then(function(redraw) {
+        .then(redraw => {
           if (redraw) call();
           r._ready = null;
         });

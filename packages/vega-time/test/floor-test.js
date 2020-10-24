@@ -2,7 +2,7 @@ var tape = require('tape'),
     vega = require('../'),
     {local, utc} = require('./util');
 
-var UNITS = [
+const UNITS = [
   'year',
   'quarter',
   'month',
@@ -44,8 +44,8 @@ function testFloor(t, data, f, g) {
   data.forEach(d => t.equal(+f(d.date), +g(d)));
 }
 
-tape('timeFloor generates local floor function', function(t) {
-  var data = [
+tape('timeFloor generates local floor function', t => {
+  const data = [
     {y: 2012, q: 0, m: 0, d: 1, w: 1, u: 0, doy: 1},
     {y: 2012, q: 1, m: 3, d: 2, w: 14, u: 1, doy: 93},
     {y: 2012, q: 2, m: 6, d: 3, w: 27, u: 2, doy: 185},
@@ -61,8 +61,8 @@ tape('timeFloor generates local floor function', function(t) {
   t.end();
 });
 
-tape('utcFloor generates utc floor function', function(t) {
-  var data = [
+tape('utcFloor generates utc floor function', t => {
+  const data = [
     {y: 2012, q: 0, m: 0, d: 1, w: 1, u: 0, doy: 1},
     {y: 2012, q: 1, m: 3, d: 2, w: 14, u: 1, doy: 93},
     {y: 2012, q: 2, m: 6, d: 3, w: 27, u: 2, doy: 185},
@@ -78,7 +78,7 @@ tape('utcFloor generates utc floor function', function(t) {
   t.end();
 });
 
-tape('timeFloor handles step parameter', function(t) {
+tape('timeFloor handles step parameter', t => {
   const d1 = local(2020, 5, 15),
         d2 = local(2020, 5, 22),
         yq = ['year', 'quarter'],
@@ -98,7 +98,7 @@ tape('timeFloor handles step parameter', function(t) {
   t.end();
 });
 
-tape('utcFloor handles step parameter', function(t) {
+tape('utcFloor handles step parameter', t => {
   const d1 = utc(2020, 5, 15),
         d2 = utc(2020, 5, 22),
         yq = ['year', 'quarter'],

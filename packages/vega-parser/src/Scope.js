@@ -106,7 +106,7 @@ Scope.prototype = Subscope.prototype = {
     op.id = this.id();
     // if pre-registration references exist, resolve them now
     if (op.refs) {
-      op.refs.forEach(function(ref) { ref.$ref = op.id; });
+      op.refs.forEach(ref => { ref.$ref = op.id; });
       op.refs = null;
     }
     return op;
@@ -208,8 +208,8 @@ Scope.prototype = Subscope.prototype = {
       error('Unsupported field reference: ' + stringValue(field));
     }
 
-    let s = field.signal,
-        f = this.field[s];
+    const s = field.signal;
+    let f = this.field[s];
 
     if (!f) {
       const params = {name: this.signalRef(s)};
@@ -413,13 +413,11 @@ function propertyLambda(spec) {
 }
 
 function arrayLambda(array) {
-  let code = '[',
-      i = 0,
-      n = array.length,
-      value;
+  const n = array.length;
+  let code = '[';
 
-  for (; i<n; ++i) {
-    value = array[i];
+  for (let i = 0; i<n; ++i) {
+    const value = array[i];
     code += (i > 0 ? ',' : '')
       + (isObject(value)
         ? (value.signal || propertyLambda(value))

@@ -6,7 +6,7 @@ var tape = require('tape'),
     Overlap = tx.overlap;
 
 function items() {
-  var mark = {bounds: new Bounds(0, 0, 20, 10)};
+  const mark = {bounds: new Bounds(0, 0, 20, 10)};
   return [
     {opacity: 1, mark: mark, bounds: new Bounds().set( 0, 0,  3, 10)},
     {opacity: 1, mark: mark, bounds: new Bounds().set( 5, 0, 20, 10)},
@@ -18,7 +18,7 @@ function toObject(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
-tape('Overlap removes overlapping items (parity)', function(t) {
+tape('Overlap removes overlapping items (parity)', t => {
   var data = items(),
       df = new vega.Dataflow(),
       co = df.add(Collect),
@@ -41,7 +41,7 @@ tape('Overlap removes overlapping items (parity)', function(t) {
   t.end();
 });
 
-tape('Overlap removes overlapping items (greedy)', function(t) {
+tape('Overlap removes overlapping items (greedy)', t => {
   var data = items(),
       df = new vega.Dataflow(),
       co = df.add(Collect),

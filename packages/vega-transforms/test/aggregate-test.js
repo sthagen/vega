@@ -6,8 +6,8 @@ var tape = require('tape'),
     Collect = tx.collect,
     Aggregate = tx.aggregate;
 
-tape('Aggregate aggregates tuples', function(t) {
-  var data = [
+tape('Aggregate aggregates tuples', t => {
+  const data = [
     {k:'a', v:1}, {k:'b', v:3},
     {k:'a', v:2}, {k:'b', v:4}
   ];
@@ -26,7 +26,7 @@ tape('Aggregate aggregates tuples', function(t) {
 
   // -- test adds
   df.pulse(col, changeset().insert(data)).run();
-  var d = out.value;
+  let d = out.value;
   t.equal(d.length, 2);
   t.equal(d[0].k, 'a');
   t.equal(d[0].count_v, 2);
@@ -89,8 +89,8 @@ tape('Aggregate aggregates tuples', function(t) {
   t.end();
 });
 
-tape('Aggregate handles count aggregates', function(t) {
-  var data = [
+tape('Aggregate handles count aggregates', t => {
+  const data = [
     {foo:0, bar:1},
     {foo:2, bar:3},
     {foo:4, bar:5}
@@ -140,8 +140,8 @@ tape('Aggregate handles count aggregates', function(t) {
   t.end();
 });
 
-tape('Aggregate properly handles empty aggregation cells', function(t) {
-  var data = [
+tape('Aggregate properly handles empty aggregation cells', t => {
+  const data = [
     {k:'a', v:1}, {k:'b', v:3},
     {k:'a', v:2}, {k:'b', v:4}
   ];
@@ -164,13 +164,13 @@ tape('Aggregate properly handles empty aggregation cells', function(t) {
 
   // -- remove category 'b'
   df.pulse(col, changeset()
-    .remove(function(d) { return d.k === 'b'; })).run();
+    .remove(d => d.k === 'b')).run();
   t.equal(out.value.length, 1);
 
   // -- modify tuple
   df.pulse(col, changeset().modify(data[0], 'v', 2)).run();
 
-  var d = out.value;
+  const d = out.value;
   t.equal(d.length, 1);
   t.equal(d[0].k, 'a');
   t.equal(d[0].count_v, 2);
@@ -182,8 +182,8 @@ tape('Aggregate properly handles empty aggregation cells', function(t) {
   t.end();
 });
 
-tape('Aggregate handles distinct aggregates', function(t) {
-  var data = [
+tape('Aggregate handles distinct aggregates', t => {
+  const data = [
     {foo:null},
     {foo:null},
     {foo:undefined},
@@ -225,8 +225,8 @@ tape('Aggregate handles distinct aggregates', function(t) {
   t.end();
 });
 
-tape('Aggregate handles cross-product', function(t) {
-  var data = [
+tape('Aggregate handles cross-product', t => {
+  const data = [
     {a: 0, b: 2},
     {a: 1, b: 3}
   ];
@@ -247,7 +247,7 @@ tape('Aggregate handles cross-product', function(t) {
 
   // -- test add
   df.pulse(col, changeset().insert(data)).run();
-  var d = out.value;
+  let d = out.value;
   t.equal(d.length, 4);
   t.equal(d[0].a, 0);
   t.equal(d[0].b, 2);
@@ -311,8 +311,8 @@ tape('Aggregate handles cross-product', function(t) {
   t.end();
 });
 
-tape('Aggregate handles empty/invalid data', function(t) {
-  var ops = [
+tape('Aggregate handles empty/invalid data', t => {
+  const ops = [
     'count',
     'missing',
     'valid',
@@ -325,7 +325,7 @@ tape('Aggregate handles empty/invalid data', function(t) {
     'max',
     'median'
   ];
-  var res = [4, 3, 0, 0]; // higher indices 'undefined'
+  const res = [4, 3, 0, 0]; // higher indices 'undefined'
 
   var v = util.field('v'),
       df = new vega.Dataflow(),
@@ -344,7 +344,7 @@ tape('Aggregate handles empty/invalid data', function(t) {
       {v: NaN}, {v: null}, {v: undefined}, {v: ''}
     ])
   ).run();
-  var d = out.value[0];
+  const d = out.value[0];
 
   ops.forEach((op, i) => {
     t.equal(d[op], res[i], op);

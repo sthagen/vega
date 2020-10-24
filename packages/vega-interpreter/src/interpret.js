@@ -3,6 +3,8 @@ import Ops from './ops-binary';
 import Unary from './ops-unary';
 import Functions from './functions';
 
+const EventFunctions = ['view', 'item', 'group', 'xy', 'x', 'y'];
+
 const Visitors = {
   Literal: ($, n) => n.value,
 
@@ -25,8 +27,8 @@ const Visitors = {
   },
 
   CallExpression: ($, n) => {
-    let name = n.callee.name,
-        args = n.arguments;
+    const args = n.arguments;
+    let name = n.callee.name;
 
     // handle special internal functions used by encoders
     // re-route to corresponding standard function
@@ -66,10 +68,14 @@ const Visitors = {
 export default function(ast, fn, params, datum, event, item) {
   const $ = n => Visitors[n.type]($, n);
   $.memberDepth = 0;
-  $.fn = fn;
+  $.fn = Object.create(fn);
   $.params = params;
   $.datum = datum;
   $.event = event;
   $.item = item;
+
+  // route event functions to annotated vega event context
+  EventFunctions.forEach(f => $.fn[f] = (...args) => event.vega[f](...args));
+
   return $(ast);
 }

@@ -115,9 +115,9 @@ Handler.prototype = {
   handlers(type) {
     const h = this._handlers, a = [];
     if (type) {
-      a.push.apply(a, h[this.eventName(type)]);
+      a.push(...h[this.eventName(type)]);
     } else {
-      for (const k in h) { a.push.apply(a, h[k]); }
+      for (const k in h) { a.push(...h[k]); }
     }
     return a;
   },
@@ -148,7 +148,7 @@ Handler.prototype = {
         for (const name in opt) a.setAttribute(name, opt[name]);
         a.dispatchEvent(e);
       })
-      .catch(function() { /* do nothing */ });
+      .catch(() => { /* do nothing */ });
   },
 
   /**

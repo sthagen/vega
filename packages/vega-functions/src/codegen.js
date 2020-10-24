@@ -278,8 +278,8 @@ const eventFunctions = ['view', 'item', 'group', 'xy', 'x', 'y'], // event funct
 
 // export code generator parameters
 export const codegenParams = {
-  blacklist:  ['_'],
-  whitelist:  ['datum', 'event', 'item'],
+  forbidden:  ['_'],
+  allowed:    ['datum', 'event', 'item'],
   fieldvar:   'datum',
   globalvar:  id => `_[${stringValue(SignalPrefix + id)}]`,
   functions:  buildFunctions,
@@ -294,7 +294,7 @@ export const codeGenerator = codegen(codegenParams);
 function buildFunctions(codegen) {
   const fn = functions(codegen);
   eventFunctions.forEach(name => fn[name] = eventPrefix + name);
-  for (let name in functionContext) { fn[name] = thisPrefix + name; }
+  for (const name in functionContext) { fn[name] = thisPrefix + name; }
   extend(fn, internalScaleFunctions(codegen, functionContext, astVisitors));
   return fn;
 }
