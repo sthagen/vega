@@ -5,7 +5,7 @@
 }(this, (function (exports) { 'use strict';
 
   var name = "vega";
-  var version$1 = "5.20.0";
+  var version$1 = "5.20.1";
   var description = "The Vega visualization grammar.";
   var keywords$1 = [
   	"vega",
@@ -36,7 +36,7 @@
   };
   var dependencies = {
   	"vega-crossfilter": "~4.0.5",
-  	"vega-dataflow": "~5.7.3",
+  	"vega-dataflow": "~5.7.4",
   	"vega-encode": "~4.8.3",
   	"vega-event-selector": "~2.0.6",
   	"vega-expression": "~4.0.1",
@@ -55,8 +55,8 @@
   	"vega-scenegraph": "~4.9.4",
   	"vega-statistics": "~1.7.9",
   	"vega-time": "~2.0.4",
-  	"vega-transforms": "~4.9.3",
-  	"vega-typings": "~0.20.0",
+  	"vega-transforms": "~4.9.4",
+  	"vega-typings": "~0.21.0",
   	"vega-util": "~1.16.1",
   	"vega-view": "~5.10.0",
   	"vega-view-transforms": "~4.5.8",
@@ -1604,18 +1604,22 @@
     if ((step = tickIncrement(start, stop, count)) === 0 || !isFinite(step)) return [];
 
     if (step > 0) {
-      start = Math.ceil(start / step);
-      stop = Math.floor(stop / step);
-      ticks = new Array(n = Math.ceil(stop - start + 1));
+      let r0 = Math.round(start / step),
+          r1 = Math.round(stop / step);
+      if (r0 * step < start) ++r0;
+      if (r1 * step > stop) --r1;
+      ticks = new Array(n = r1 - r0 + 1);
 
-      while (++i < n) ticks[i] = (start + i) * step;
+      while (++i < n) ticks[i] = (r0 + i) * step;
     } else {
       step = -step;
-      start = Math.ceil(start * step);
-      stop = Math.floor(stop * step);
-      ticks = new Array(n = Math.ceil(stop - start + 1));
+      let r0 = Math.round(start * step),
+          r1 = Math.round(stop * step);
+      if (r0 / step < start) ++r0;
+      if (r1 / step > stop) --r1;
+      ticks = new Array(n = r1 - r0 + 1);
 
-      while (++i < n) ticks[i] = (start + i) / step;
+      while (++i < n) ticks[i] = (r0 + i) / step;
     }
 
     if (reverse) ticks.reverse();
@@ -4657,7 +4661,12 @@
             op._targets.remove(this);
           }
         }
-      }
+      } // remove references to the source and pulse object,
+      // if present, to prevent memory leaks of old data.
+
+
+      this.pulse = null;
+      this.source = null;
     },
 
     /**
@@ -4893,8 +4902,12 @@
       return this.filter(() => active);
     },
 
-    detach() {// no-op for handling detach requests
+    detach() {
       // ensures compatibility with operators (#2753)
+      // remove references to other streams and filter functions that may
+      // be bound to subcontexts that need to be garbage collected.
+      this._filter = truthy;
+      this._targets = null;
     }
 
   };
@@ -9412,25 +9425,40 @@
 
     clean() {
       const flows = this.value;
+      let detached = 0;
 
       for (const key in flows) {
         if (flows[key].count === 0) {
           const detach = flows[key].detachSubflow;
           if (detach) detach();
           delete flows[key];
+          ++detached;
         }
+      } // remove inactive targets from the active targets array
+
+
+      if (detached) {
+        const active = this._targets.filter(sf => sf && sf.count > 0);
+
+        this.initTargets(active);
       }
     },
 
-    initTargets() {
+    initTargets(act) {
       const a = this._targets,
-            n = a.length;
+            n = a.length,
+            m = act ? act.length : 0;
+      let i = 0;
 
-      for (let i = 0; i < n && a[i] != null; ++i) {
+      for (; i < m; ++i) {
+        a[i] = act[i];
+      }
+
+      for (; i < n && a[i] != null; ++i) {
         a[i] = null; // ensure old flows can be garbage collected
       }
 
-      a.active = 0;
+      a.active = m;
     },
 
     transform(_, pulse) {
@@ -14684,7 +14712,7 @@
     }
 
     function scale(x) {
-      return isNaN(x = +x) ? unknown : (output || (output = piecewise(domain.map(transform), range, interpolate)))(transform(clamp(x)));
+      return x == null || isNaN(x = +x) ? unknown : (output || (output = piecewise(domain.map(transform), range, interpolate)))(transform(clamp(x)));
     }
 
     scale.invert = function (y) {
@@ -14827,7 +14855,7 @@
     var unknown;
 
     function scale(x) {
-      return isNaN(x = +x) ? unknown : x;
+      return x == null || isNaN(x = +x) ? unknown : x;
     }
 
     scale.invert = scale;
@@ -15100,7 +15128,7 @@
     }
 
     function scale(x) {
-      return isNaN(x = +x) ? unknown : range[bisectRight$1(thresholds, x)];
+      return x == null || isNaN(x = +x) ? unknown : range[bisectRight$1(thresholds, x)];
     }
 
     scale.invertExtent = function (y) {
@@ -15146,7 +15174,7 @@
         unknown;
 
     function scale(x) {
-      return x <= x ? range[bisectRight$1(domain, x, 0, n)] : unknown;
+      return x != null && x <= x ? range[bisectRight$1(domain, x, 0, n)] : unknown;
     }
 
     function rescale() {
@@ -15193,7 +15221,7 @@
         n = 1;
 
     function scale(x) {
-      return x <= x ? range[bisectRight$1(domain, x, 0, n)] : unknown;
+      return x != null && x <= x ? range[bisectRight$1(domain, x, 0, n)] : unknown;
     }
 
     scale.domain = function (_) {
@@ -15340,7 +15368,7 @@
         unknown;
 
     function scale(x) {
-      return isNaN(x = +x) ? unknown : interpolator(k10 === 0 ? 0.5 : (x = (transform(x) - t0) * k10, clamp ? Math.max(0, Math.min(1, x)) : x));
+      return x == null || isNaN(x = +x) ? unknown : interpolator(k10 === 0 ? 0.5 : (x = (transform(x) - t0) * k10, clamp ? Math.max(0, Math.min(1, x)) : x));
     }
 
     scale.domain = function (_) {
